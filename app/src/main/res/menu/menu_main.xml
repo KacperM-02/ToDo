@@ -3,8 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.example.todo.MainActivity">
     <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
+        android:id="@+id/show_done_tasks"
+        android:title="@string/show_done_tasks"
+        />
+    <item
+        android:id="@+id/select_category"
+        android:title="@string/select_category"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/select_notification_time"
+        android:title="@string/select_notification_time"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/sort_tasks"
+        android:title="@string/sort_tasks"
+        app:showAsAction="never"/>
 </menu>

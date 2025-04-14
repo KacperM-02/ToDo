@@ -7,8 +7,8 @@
 
     <fragment
         android:id="@+id/FirstFragment"
-        android:name="com.example.todo.FirstFragment"
-        tools:layout="@layout/fragment_first">
+        android:name="com.example.todo.fragments.FragmentMain"
+        tools:layout="@layout/fragment_main">
 
         <action
             android:id="@+id/action_FirstFragment_to_SecondFragment"
@@ -17,8 +17,8 @@
 
     <fragment
         android:id="@+id/SecondFragment"
-        android:name="com.example.todo.SecondFragment"
-        tools:layout="@layout/fragment_second">
+        android:name="com.example.todo.fragments.FragmentDetails"
+        tools:layout="@layout/fragment_details">
 
         <action
             android:id="@+id/action_SecondFragment_to_FirstFragment"

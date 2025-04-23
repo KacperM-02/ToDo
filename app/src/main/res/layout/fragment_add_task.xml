@@ -156,6 +156,6 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
 
-        android:text="@string/task_changes_save"
+        android:text="@string/add_task"
         style="@style/Widget.MaterialComponents.Button.UnelevatedButton"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

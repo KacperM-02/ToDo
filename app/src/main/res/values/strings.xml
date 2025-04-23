@@ -28,4 +28,5 @@
     <string name="main_search_bar">Search…</string>
     <string name="attachments">Attachments</string>
     <string name="add_attachment">Add attachment</string>
+    <string name="add_task">Add task</string>
 </resources>

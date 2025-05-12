@@ -9,6 +9,7 @@ import com.example.todo.data.TaskContract.TaskEntry.DATABASE_NAME
 import com.example.todo.data.TaskContract.TaskEntry.DATABASE_VERSION
 import com.example.todo.data.TaskContract.TaskEntry.TABLE_TASKS
 import com.example.todo.data.TaskContract.TaskEntry.COLUMN_ATTACHMENT_PATH
+import com.example.todo.data.TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID
 import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_CATEGORY
 import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_CREATION_TIME
 import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_DESCRIPTION
@@ -39,9 +40,9 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         val createAttachmentsTable = """
             CREATE TABLE IF NOT EXISTS $TABLE_ATTACHMENTS (
                 $COLUMN_ATTACHMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                ${TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID} INTEGER,
+                $COLUMN_ATTACHMENT_TASK_ID INTEGER,
                 $COLUMN_ATTACHMENT_PATH TEXT NOT NULL,
-                FOREIGN KEY (${TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID}) REFERENCES $TABLE_TASKS(${TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID}) ON DELETE CASCADE
+                FOREIGN KEY ($COLUMN_ATTACHMENT_TASK_ID) REFERENCES $TABLE_TASKS($COLUMN_ATTACHMENT_TASK_ID) ON DELETE CASCADE
             )
         """.trimIndent()
 
@@ -87,7 +88,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         val cursor = db.query(
             TABLE_ATTACHMENTS,
             arrayOf(COLUMN_ATTACHMENT_PATH),
-            "$COLUMN_TASK_ID = ?",
+            "$COLUMN_ATTACHMENT_TASK_ID = ?",
             arrayOf(taskId.toString()),
             null, null, null
         )
@@ -98,5 +99,48 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         }
         db.close()
         return attachments
+    }
+
+    fun getAllTasks(): List<Task> {
+        val db = readableDatabase
+        val tasks = mutableListOf<Task>()
+
+        // Pobierz wszystkie zadania
+        val tasksCursor = db.query(
+            TABLE_TASKS,
+            null, // wszystkie kolumny
+            null, // bez WHERE
+            null, // bez args
+            null, // bez GROUP BY
+            null, // bez HAVING
+            "$COLUMN_TASK_EXECUTION_DATE ASC" // sortowanie po dacie wykonania
+        )
+
+        tasksCursor.use { cursor ->
+            while (cursor.moveToNext()) {
+                val taskId = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TASK_ID))
+
+                // Pobierz załączniki dla bieżącego zadania
+                val attachments = getAttachmentsForTask(taskId)
+
+                // Utwórz obiekt Task
+                tasks.add(
+                    Task(
+                        taskId = taskId,
+                        taskTitle = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_TITLE)),
+                        taskStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TASK_STATUS)),
+                        taskDescription = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_DESCRIPTION)),
+                        taskCreationTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_CREATION_TIME)),
+                        taskExecutionDate = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_EXECUTION_DATE)),
+                        taskNotification = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TASK_NOTIFICATION)),
+                        taskCategory = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_CATEGORY)),
+                        attachments = attachments
+                    )
+                )
+            }
+        }
+
+        db.close()
+        return tasks
     }
 }

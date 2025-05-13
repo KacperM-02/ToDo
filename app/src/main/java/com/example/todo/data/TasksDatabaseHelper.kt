@@ -72,19 +72,19 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     }
 
     // Dodawanie załącznika
-    fun insertAttachment(attachment: Attachment): Long {
+    fun insertAttachment(attachment: Attachment, taskId: Long): Long {
         val db = writableDatabase
         val values = ContentValues().apply {
-            put(COLUMN_TASK_ID, attachment.taskId)
+            put(COLUMN_ATTACHMENT_TASK_ID, taskId)
             put(COLUMN_ATTACHMENT_PATH, attachment.attachmentPath)
         }
         return db.insert(TABLE_ATTACHMENTS, null, values).also { db.close() }
     }
 
     // Pobieranie załączników dla zadania
-    fun getAttachmentsForTask(taskId: Long): List<String> {
+    fun getAttachmentsForTask(taskId: Long): List<Attachment> {
         val db = readableDatabase
-        val attachments = mutableListOf<String>()
+        val attachments = mutableListOf<Attachment>()
         val cursor = db.query(
             TABLE_ATTACHMENTS,
             arrayOf(COLUMN_ATTACHMENT_PATH),
@@ -94,7 +94,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         )
         cursor.use {
             while (it.moveToNext()) {
-                attachments.add(it.getString(it.getColumnIndexOrThrow(COLUMN_ATTACHMENT_PATH)))
+                attachments.add(Attachment(attachmentPath=it.getString(it.getColumnIndexOrThrow(COLUMN_ATTACHMENT_PATH))))
             }
         }
         db.close()

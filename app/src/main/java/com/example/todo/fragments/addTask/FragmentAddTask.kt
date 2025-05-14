@@ -13,9 +13,8 @@ import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.OptIn
-import androidx.media3.common.util.UnstableApi
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
 import com.example.todo.data.Attachment
 import com.example.todo.data.Task
@@ -30,6 +29,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     private var _binding: FragmentAddTaskBinding? = null
     private val binding get() = _binding!!
     private lateinit var dbHelper: TasksDatabaseHelper
+    private lateinit var attachmentAdapter: AttachmentAdapter
     private lateinit var task: Task
 
     private lateinit var calendar: Calendar
@@ -45,7 +45,6 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     private var selectedHourOfDay = 0
     private var selectedMinute = 0
 
-    @OptIn(UnstableApi::class)
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -56,15 +55,25 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         task = Task()
         val attachmentsList = mutableListOf<Attachment>()
 
-        val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
-            for(u in uris.indices) {
-                attachmentsList.add(Attachment(attachmentPath=uris[u].toString()))
-                if(u == 0) binding.image1.setImageURI(uris[u])
-                if(u == 1) binding.image2.setImageURI(uris[u])
-                if(u == 2) binding.image3.setImageURI(uris[u])
-            }
 
-            task.attachments = attachmentsList
+        val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
+            if(uris.isNotEmpty())
+            {
+                attachmentsList.clear()
+                uris.forEach { uri ->
+                    attachmentsList.add(Attachment(attachmentPath = uri.toString()))
+                }
+
+                attachmentAdapter = AttachmentAdapter(attachmentsList) { attachment ->
+                    attachmentAdapter.removeAttachment(attachment)
+                    attachmentsList.remove(attachment)
+                }
+
+                binding.attachmentsRecyclerView.apply {
+                    layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+                    adapter = attachmentAdapter
+                }
+            }
         }
 
         binding.addTaskButton.setOnClickListener {

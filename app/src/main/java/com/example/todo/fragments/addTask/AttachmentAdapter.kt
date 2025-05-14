@@ -7,7 +7,7 @@ import android.widget.ImageView
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo.R
-import com.example.todo.data.Attachment
+import com.example.todo.data.tasks.Attachment
 
 class AttachmentAdapter (
     private val attachmentList: MutableList<Attachment>,

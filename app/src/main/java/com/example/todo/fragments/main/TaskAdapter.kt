@@ -7,7 +7,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo.R
-import com.example.todo.data.Task
+import com.example.todo.data.tasks.Task
 
 class TasksAdapter(
     private val tasksList: List<Task>,

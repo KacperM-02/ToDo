@@ -111,11 +111,10 @@
                     android:id="@+id/taskCategoryDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:hint="@string/select_category"
+                    android:hint="@string/task_category"
                     android:inputType="none"
                     android:focusable="false"
-                    android:clickable="true"
-                    android:text="@string/task_category"/>
+                    android:clickable="true"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Załączniki -->

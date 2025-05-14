@@ -1,24 +1,24 @@
-package com.example.todo.data
+package com.example.todo.data.tasks
 
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_ATTACHMENT_ID
-import com.example.todo.data.TaskContract.TaskEntry.DATABASE_NAME
-import com.example.todo.data.TaskContract.TaskEntry.DATABASE_VERSION
-import com.example.todo.data.TaskContract.TaskEntry.TABLE_TASKS
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_ATTACHMENT_PATH
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_CATEGORY
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_CREATION_TIME
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_DESCRIPTION
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_EXECUTION_DATE
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_ID
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_NOTIFICATION
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_STATUS
-import com.example.todo.data.TaskContract.TaskEntry.COLUMN_TASK_TITLE
-import com.example.todo.data.TaskContract.TaskEntry.TABLE_ATTACHMENTS
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_ID
+import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_NAME
+import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_VERSION
+import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_TASKS
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_PATH
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_CATEGORY
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_CREATION_TIME
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_DESCRIPTION
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_EXECUTION_DATE
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_ID
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_NOTIFICATION
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_STATUS
+import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_TITLE
+import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_ATTACHMENTS
 
 class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase?) {

@@ -1,5 +1,6 @@
 package com.example.todo.fragments.addTask
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.icu.util.Calendar
@@ -8,7 +9,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.DatePicker
+import android.widget.EditText
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
@@ -16,9 +19,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
-import com.example.todo.data.Attachment
-import com.example.todo.data.Task
-import com.example.todo.data.TasksDatabaseHelper
+import com.example.todo.data.sharedPreferences.CategoryPreferences
+import com.example.todo.data.tasks.Attachment
+import com.example.todo.data.tasks.Task
+import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentAddTaskBinding
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -27,12 +31,12 @@ import java.time.format.DateTimeFormatter
 
 class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener {
     private var _binding: FragmentAddTaskBinding? = null
-    private val binding get() = _binding!!
+
     private lateinit var dbHelper: TasksDatabaseHelper
     private lateinit var attachmentAdapter: AttachmentAdapter
     private lateinit var task: Task
-
     private lateinit var calendar: Calendar
+
     private var dayOfMonth = 0
     private var month = 0
     private var year = 0
@@ -44,6 +48,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     private var selectedYear = 0
     private var selectedHourOfDay = 0
     private var selectedMinute = 0
+    private val binding get() = _binding!!
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,7 +60,9 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         calendar = Calendar.getInstance()
         task = Task()
         val attachmentsList = mutableListOf<Attachment>()
+        val categories = CategoryPreferences.loadCategories(requireContext())
 
+        initCategoryDropdown(categories)
 
         val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
             if(uris.isNotEmpty())
@@ -83,7 +91,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
                 taskCreationTime = LocalDate.now().toString(),
                 taskExecutionDate = binding.taskExecutionDate.text.toString(),
                 taskNotification = if(binding.taskNotificationToggle.isChecked) 1 else 0,
-                taskCategory = "Category",
+                taskCategory = binding.taskCategoryDropdown.text.toString(),
             )
 
             if(!validateTask(task)) Toast.makeText(requireContext(), "Fill the title, " +
@@ -107,7 +115,44 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         binding.addAttachmentButton.setOnClickListener {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
+
         return binding.root
+    }
+
+    private fun initCategoryDropdown(categories : MutableList<String>) {
+        val adapter = ArrayAdapter(
+            requireContext(),
+            R.layout.dropdown_item,
+            categories.toMutableList().apply { add("+ Add new") }
+        )
+
+        binding.taskCategoryDropdown.setAdapter(adapter)
+        binding.taskCategoryDropdown.setOnItemClickListener { _, _, position, _ ->
+            if (position == adapter.count - 1) {
+                showAddCategoryDialog(adapter)
+            }
+        }
+    }
+
+    private fun showAddCategoryDialog(adapter: ArrayAdapter<String>) {
+        val input = EditText(requireContext())
+        AlertDialog.Builder(requireContext())
+            .setTitle("Add new category")
+            .setView(input)
+            .setPositiveButton("Add") { _, _ ->
+                val newCategory = input.text.toString()
+                if (newCategory.isNotBlank() && adapter.getPosition(newCategory) == -1) {
+                    adapter.add(newCategory)
+                    CategoryPreferences.addCategory(requireContext(), newCategory)
+
+                    adapter.remove("+ Add new")
+                    adapter.add("+ Add new")
+
+                    binding.taskCategoryDropdown.setText(newCategory, false)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun setCalendarDate() {

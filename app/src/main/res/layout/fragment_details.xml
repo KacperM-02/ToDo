@@ -22,7 +22,7 @@
 
             <!-- Tytuł -->
             <TextView
-                android:id="@+id/titleInput"
+                android:id="@+id/taskTitleInput"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -31,7 +31,7 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
 
             <TextView
-                android:id="@+id/statusText"
+                android:id="@+id/taskStatusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -41,7 +41,7 @@
 
             <!-- Opis -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/descriptionInput"
+                android:id="@+id/taskDescriptionInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp">
@@ -70,7 +70,7 @@
 
             <!-- Czas wykonania -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/executionTime"
+                android:id="@+id/taskExecutionDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
@@ -90,7 +90,7 @@
 
             <!-- Powiadomienia -->
             <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/notificationToggle"
+                android:id="@+id/taskNotificationToggle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
@@ -108,19 +108,18 @@
                 app:endIconMode="dropdown_menu"> <!-- Ikona strzałki w dół -->
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/categoryDropdown"
+                    android:id="@+id/taskCategoryDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:hint="@string/select_category"
+                    android:hint="@string/task_category"
                     android:inputType="none"
                     android:focusable="false"
-                    android:clickable="true"
-                    android:text="@string/task_category"/>
+                    android:clickable="true"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Załączniki -->
             <TextView
-                android:id="@+id/attachments"
+                android:id="@+id/taskAttachmentsText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

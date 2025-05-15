@@ -1,0 +1,134 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:layout_margin="16dp">
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/addTaskButton"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+        <!-- Title -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/taskTitleInput"
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:gravity="start"
+                android:hint="@string/task_title"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Description -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/taskDescriptionInput"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:hint="@string/task_description"
+                android:inputType="textMultiLine"
+                android:gravity="start"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Execution date -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/taskExecutionDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/execution_date"
+                android:focusable="false"
+                android:clickable="true"
+                android:inputType="none"
+                android:longClickable="false"
+                android:cursorVisible="false"
+                />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Category -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            app:endIconMode="dropdown_menu">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/taskCategoryDropdown"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="@string/task_category"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Notification -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
+            android:id="@+id/taskNotificationToggle"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="@string/task_notification"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textAlignment="center"
+            app:switchPadding="10dp"/>
+
+        <!-- Attachments -->
+        <TextView
+            android:id="@+id/taskAttachmentsText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+
+            android:text="@string/attachments"
+            android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
+
+        <!-- Przycisk dodawania załączników -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/addAttachmentButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_attachment"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/attachmentsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+        </androidx.recyclerview.widget.RecyclerView>
+    </LinearLayout>
+
+
+    <!-- Przycisk do zapisu -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/addTaskButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+
+        android:text="@string/add_task"
+        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

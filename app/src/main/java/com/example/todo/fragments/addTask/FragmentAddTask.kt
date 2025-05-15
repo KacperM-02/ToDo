@@ -46,8 +46,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     private var selectedDayOfMonth = 0
     private var selectedMonth = 0
     private var selectedYear = 0
-    private var selectedHourOfDay = 0
-    private var selectedMinute = 0
+
     private val binding get() = _binding!!
 
 
@@ -60,9 +59,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         calendar = Calendar.getInstance()
         task = Task()
         val attachmentsList = mutableListOf<Attachment>()
-        val categories = CategoryPreferences.loadCategories(requireContext())
 
-        initCategoryDropdown(categories)
+        initCategoryDropdown(CategoryPreferences.loadCategories(requireContext()))
 
         val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
             if(uris.isNotEmpty())
@@ -123,7 +121,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         val adapter = ArrayAdapter(
             requireContext(),
             R.layout.dropdown_item,
-            categories.toMutableList().apply { add("+ Add new") }
+            categories.apply { add("+ Add new") }
         )
 
         binding.taskCategoryDropdown.setAdapter(adapter)
@@ -142,10 +140,9 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
             .setPositiveButton("Add") { _, _ ->
                 val newCategory = input.text.toString()
                 if (newCategory.isNotBlank() && adapter.getPosition(newCategory) == -1) {
-                    adapter.add(newCategory)
                     CategoryPreferences.addCategory(requireContext(), newCategory)
-
-                    adapter.remove("+ Add new")
+                    adapter.clear()
+                    adapter.addAll(CategoryPreferences.loadCategories(requireContext()))
                     adapter.add("+ Add new")
 
                     binding.taskCategoryDropdown.setText(newCategory, false)
@@ -184,14 +181,12 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
 
     private fun setSelectedDate(year: Int, month: Int, dayOfMonth: Int) {
         selectedYear = year
-        selectedMonth = month
+        selectedMonth = month + 1
         selectedDayOfMonth = dayOfMonth
     }
 
     override fun onTimeSet(view: TimePicker?, hourOfDay: Int, minute: Int) {
-        setSelectedTime(hourOfDay, minute)
-        val selectedDate = convertDate(year, month, dayOfMonth, hourOfDay, minute)
-
+        val selectedDate = convertDate(selectedYear, selectedMonth, selectedDayOfMonth, hourOfDay, minute)
         binding.taskExecutionDate.setText(selectedDate)
     }
 
@@ -205,10 +200,5 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         val dateTime = LocalDateTime.of(year, month, dayOfMonth, hourOfDay, minute)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         return dateTime.format(formatter)
-    }
-
-    private fun setSelectedTime(hourOfDay: Int, minute: Int) {
-        selectedHourOfDay = hourOfDay
-        selectedMinute = minute
     }
 }

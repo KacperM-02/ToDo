@@ -5,26 +5,26 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="zadania">
-        - Zadanie1\n
-        - Zadanie2\n
-        - Zadanie3
+    <string name="tasks">
+        - Task\n
+        - Task\n
+        - Task
     </string>
     <string name="floatingButton">floatingButton</string>
     <string name="task_title">Title</string>
-    <string name="task_description">Task Description</string>
+    <string name="task_description">Description</string>
     <string name="edit_task">Edit task</string>
-    <string name="show_done_tasks">Pokaż/Ukryj ukończone zadania</string>
-    <string name="select_category">Wybierz kategorię zadań</string>
-    <string name="select_notification_time">Wybierz czas powiadomień</string>
-    <string name="sort_tasks">Sortuj zadania\n</string>
+    <string name="show_done_tasks">Show/Hide completed tasks</string>
+    <string name="select_category">Select a category of tasks</string>
+    <string name="select_notification_time">Select notification time</string>
+    <string name="sort_tasks">Sort tasks</string>
     <string name="execution_date">Execution date</string>
     <string name="task_creation_time">Creation time</string>
     <string name="task_status">Status</string>
-    <string name="task_notification">Task notification</string>
+    <string name="task_notification">Notification</string>
     <string name="task_edit">Edit task</string>
     <string name="task_changes_save">Save changes</string>
-    <string name="task_category">Task category</string>
+    <string name="task_category">Category</string>
     <string name="main_search_bar">Search…</string>
     <string name="attachments">Attachments</string>
     <string name="add_attachment">Add attachment</string>

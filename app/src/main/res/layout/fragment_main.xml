@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:layout_marginTop="16dp"
-        android:contentDescription="@string/zadania"
+        android:contentDescription="@string/tasks"
 
         app:layout_constraintTop_toBottomOf="@id/taskSearchBar"
         app:layout_constraintLeft_toLeftOf="parent"

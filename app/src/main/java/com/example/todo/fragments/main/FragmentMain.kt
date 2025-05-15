@@ -3,9 +3,14 @@ package com.example.todo.fragments.main
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
@@ -32,6 +37,36 @@ class FragmentMain : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         setupListeners()
+
+        val menuHost: MenuHost = requireActivity()
+
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_main, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                return when (menuItem.itemId) {
+                    R.id.show_done_tasks -> {
+                        Toast.makeText(requireContext(), "Showing done tasks...", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    R.id.select_category -> {
+                        Toast.makeText(requireContext(), "Selecting category...", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    R.id.select_notification_time -> {
+                        Toast.makeText(requireContext(), "Selecting time...", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    R.id.sort_tasks -> {
+                        Toast.makeText(requireContext(), "Sorting tasks...", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    else -> return false
+                }
+            }
+        }, viewLifecycleOwner)
     }
 
     private fun setupRecyclerView() {

@@ -5,11 +5,7 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="tasks">
-        - Task\n
-        - Task\n
-        - Task
-    </string>
+    <string name="tasks">Tasks list</string>
     <string name="floatingButton">floatingButton</string>
     <string name="task_title">Title</string>
     <string name="task_description">Description</string>

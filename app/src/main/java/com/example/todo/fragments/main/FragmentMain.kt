@@ -14,6 +14,7 @@ import androidx.core.view.MenuProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
+import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentMainBinding
 
@@ -22,6 +23,7 @@ class FragmentMain : Fragment() {
     private val binding get() = _binding!!
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
+    private lateinit var tasksList: MutableList<Task>
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,6 +32,7 @@ class FragmentMain : Fragment() {
     ): View {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         dbHelper = TasksDatabaseHelper(requireContext())
+        tasksList = dbHelper.getAllTasks().toMutableList()
         return binding.root
     }
 
@@ -70,10 +73,9 @@ class FragmentMain : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        tasksAdapter = TasksAdapter(dbHelper.getAllTasks()) { task ->
-//            val action = FragmentMainDirections.actionFragmentMainToFragmentTaskDetails(task.taskId)
-//            findNavController().navigate(action)
-            Toast.makeText(requireContext(), "Clicked task: ${task.taskTitle}", Toast.LENGTH_SHORT).show()
+        tasksAdapter = TasksAdapter(tasksList) { task ->
+            val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
+            findNavController().navigate(action)
         }
 
         binding.tasksRecyclerView.apply {

@@ -1,6 +1,7 @@
 package com.example.todo.fragments.main
 
 import android.app.AlertDialog
+import android.graphics.Color
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -12,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.SearchView
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -78,17 +80,7 @@ class FragmentMain : Fragment() {
                         true
                     }
                     R.id.select_category -> {
-                        val selectedCategory = showCategoryDialog()
-                        val filteredList = if(selectedCategory.isNotEmpty()) {
-                            allTasksList.filter { task ->
-                                task.taskCategory == selectedCategory
-                            }
-                        }
-                        else {
-                            allTasksList
-                        }
-
-                        tasksAdapter.updateList(filteredList)
+                        showCategoryDialog()
                         true
                     }
                     R.id.select_notification_time -> {
@@ -124,27 +116,57 @@ class FragmentMain : Fragment() {
         })
     }
 
-    private fun showCategoryDialog(): String {
-        var selectedCategory = ""
-        val spinner = Spinner(requireContext())
-        val adapter = ArrayAdapter(
+    private fun showCategoryDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_select_category, null)
+        val spinner = dialogView.findViewById<Spinner>(R.id.categorySpinner)
+
+        val categories = CategoryPreferences.loadCategories(requireContext())
+        categories.addFirst("Select category")
+
+        val adapter = object : ArrayAdapter<String>(
             requireContext(),
-            android.R.layout.simple_spinner_item,
-            CategoryPreferences.loadCategories(requireContext())
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            R.layout.dropdown_item,
+            categories
+        ) {
+            override fun isEnabled(position: Int): Boolean {
+                return position != 0
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                val textView = view as TextView
+                textView.setTextColor(if (position == 0) Color.GRAY else Color.BLACK)
+                return view
+            }
+        }
         spinner.adapter = adapter
+        spinner.setSelection(0)
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Select a category of tasks")
-            .setView(spinner)
+            .setTitle(R.string.select_category)
+            .setView(dialogView)
             .setPositiveButton("Filter") {_, _ ->
-                selectedCategory = spinner.selectedItem.toString()
+                filterTasksByCategory(spinner.selectedItem.toString())
             }
             .setNegativeButton("Cancel", null)
+            .setNeutralButton("Clear") {_, _ ->
+                filterTasksByCategory("")
+            }
             .show()
 
-        return selectedCategory
+    }
+
+    private fun filterTasksByCategory(selectedCategory: String) {
+        val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category") {
+            allTasksList.filter { task ->
+                task.taskCategory == selectedCategory
+            }
+        }
+        else {
+            allTasksList
+        }
+
+        tasksAdapter.updateList(filteredList)
     }
 
     private fun setupRecyclerView() {

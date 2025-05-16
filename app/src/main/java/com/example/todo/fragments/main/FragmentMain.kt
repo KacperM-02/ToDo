@@ -8,6 +8,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SearchView
 import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -21,9 +22,12 @@ import com.example.todo.databinding.FragmentMainBinding
 class FragmentMain : Fragment() {
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
-    private lateinit var tasksList: MutableList<Task>
+    private lateinit var allTasksList: MutableList<Task>
+
+    private var showCompletedTasks = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -32,7 +36,7 @@ class FragmentMain : Fragment() {
     ): View {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         dbHelper = TasksDatabaseHelper(requireContext())
-        tasksList = dbHelper.getAllTasks().toMutableList()
+        allTasksList = dbHelper.getAllTasks().toMutableList()
         return binding.root
     }
 
@@ -51,7 +55,22 @@ class FragmentMain : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.show_done_tasks -> {
-                        Toast.makeText(requireContext(), "Showing done tasks...", Toast.LENGTH_SHORT).show()
+                        if(showCompletedTasks == 0)
+                        {
+                            showCompletedTasks = 1
+                            menuItem.title = "Hide completed tasks"
+                        }
+                        else {
+                            showCompletedTasks = 0
+                            menuItem.title = "Show completed tasks"
+                        }
+
+                        val filteredList = if(showCompletedTasks == 1) {
+                            allTasksList.filter { task ->
+                                task.taskStatus == 1
+                            }
+                        } else allTasksList
+                        tasksAdapter.updateList(filteredList)
                         true
                     }
                     R.id.select_category -> {
@@ -70,10 +89,29 @@ class FragmentMain : Fragment() {
                 }
             }
         }, viewLifecycleOwner)
+
+        binding.taskSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                binding.taskSearchView.clearFocus()
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                val filteredList = if (newText.isNullOrBlank()) {
+                    allTasksList
+                } else {
+                    allTasksList.filter { task ->
+                        task.taskTitle.contains(newText, ignoreCase = true)
+                    }
+                }
+                tasksAdapter.updateList(filteredList)
+                return true
+            }
+        })
     }
 
     private fun setupRecyclerView() {
-        tasksAdapter = TasksAdapter(tasksList) { task ->
+        tasksAdapter = TasksAdapter(allTasksList) { task ->
             val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
             findNavController().navigate(action)
         }

@@ -10,7 +10,7 @@ import com.example.todo.R
 import com.example.todo.data.tasks.Task
 
 class TasksAdapter(
-    private val tasksList: List<Task>,
+    private var tasksList: List<Task>,
     private val onItemClick: (Task) -> Unit
 ) : RecyclerView.Adapter<TasksAdapter.TaskViewHolder>() {
 
@@ -21,8 +21,7 @@ class TasksAdapter(
 
         fun bind(task: Task) {
             titleTextView.text = task.taskTitle
-            dueDateTextView.text = "Termin: ${task.taskExecutionDate}"
-
+            dueDateTextView.text = itemView.context.getString(R.string.execution_date_main, task.taskExecutionDate)
             attachmentIcon.visibility = if (task.attachments.isNotEmpty()) View.VISIBLE else View.GONE
 
             itemView.setOnClickListener { onItemClick(task) }
@@ -40,4 +39,10 @@ class TasksAdapter(
     }
 
     override fun getItemCount() = tasksList.size
+
+
+    fun updateList(newList: List<Task>) {
+        tasksList = newList
+        notifyDataSetChanged()
+    }
 }

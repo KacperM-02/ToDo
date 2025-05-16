@@ -14,8 +14,4 @@
         android:id="@+id/select_notification_time"
         android:title="@string/select_notification_time"
         app:showAsAction="never"/>
-    <item
-        android:id="@+id/sort_tasks"
-        android:title="@string/sort_tasks"
-        app:showAsAction="never"/>
 </menu>

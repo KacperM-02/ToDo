@@ -1,5 +1,9 @@
 package com.example.todo.data.tasks
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class Task(
     var taskId: Long = 0,
     val taskTitle: String = "",
@@ -10,9 +14,10 @@ data class Task(
     val taskNotification: Int = 0,
     val taskCategory: String = "",
     var attachments: List<Attachment> = emptyList()
-)
+) : Parcelable
 
+@Parcelize
 data class Attachment(
     val attachmentId: Long = 0,
     val taskId: Long = 0,
-    val attachmentPath: String = "")
+    val attachmentPath: String = "") : Parcelable

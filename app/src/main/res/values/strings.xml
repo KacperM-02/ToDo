@@ -5,16 +5,13 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="tasks">
-        - Task\n
-        - Task\n
-        - Task
-    </string>
+    <string name="tasks">Tasks list</string>
     <string name="floatingButton">floatingButton</string>
+    <string name="execution_date_main">Execution date: %s</string>
     <string name="task_title">Title</string>
     <string name="task_description">Description</string>
     <string name="edit_task">Edit task</string>
-    <string name="show_done_tasks">Show/Hide completed tasks</string>
+    <string name="show_done_tasks">Show completed tasks</string>
     <string name="select_category">Select a category of tasks</string>
     <string name="select_notification_time">Select notification time</string>
     <string name="sort_tasks">Sort tasks</string>

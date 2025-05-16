@@ -13,7 +13,7 @@ object CategoryPreferences {
         return savedCategories?.sorted()?.toMutableList() ?: mutableListOf("Education", "Home", "Hobby", "Shopping", "Work")
     }
 
-    fun saveCategories(context: Context, categories: List<String>) {
+    private fun setCategories(context: Context, categories: List<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit { putStringSet(CATEGORIES_KEY, categories.toSortedSet()) }
     }
@@ -22,7 +22,7 @@ object CategoryPreferences {
         val categories = loadCategories(context)
         if (!categories.contains(category)) {
             categories.add(category)
-            saveCategories(context, categories)
+            setCategories(context, categories)
         }
     }
 }

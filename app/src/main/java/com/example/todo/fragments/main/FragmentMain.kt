@@ -1,5 +1,7 @@
 package com.example.todo.fragments.main
 
+import android.app.AlertDialog
+import android.graphics.Color
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -8,20 +10,30 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import android.widget.ArrayAdapter
+import android.widget.SearchView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
+import com.example.todo.data.sharedPreferences.CategoryPreferences
+import com.example.todo.data.sharedPreferences.NotificationTimePreferences
+import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentMainBinding
 
 class FragmentMain : Fragment() {
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
+    private lateinit var allTasksList: MutableList<Task>
+
+    private var showCompletedTasks = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,6 +42,7 @@ class FragmentMain : Fragment() {
     ): View {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         dbHelper = TasksDatabaseHelper(requireContext())
+        allTasksList = dbHelper.getAllTasks().toMutableList()
         return binding.root
     }
 
@@ -48,32 +61,136 @@ class FragmentMain : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.show_done_tasks -> {
-                        Toast.makeText(requireContext(), "Showing done tasks...", Toast.LENGTH_SHORT).show()
+                        if(showCompletedTasks == 0)
+                        {
+                            showCompletedTasks = 1
+                            menuItem.title = "Hide completed tasks"
+                        }
+                        else {
+                            showCompletedTasks = 0
+                            menuItem.title = "Show completed tasks"
+                        }
+
+                        val filteredList = if(showCompletedTasks == 1) {
+                            allTasksList.filter { task ->
+                                task.taskStatus == 1
+                            }
+                        } else allTasksList
+                        tasksAdapter.updateList(filteredList)
                         true
                     }
                     R.id.select_category -> {
-                        Toast.makeText(requireContext(), "Selecting category...", Toast.LENGTH_SHORT).show()
+                        val categoriesList = CategoryPreferences.loadCategories(requireContext())
+                        categoriesList.addFirst("Select category...")
+                        showSpinnerDialog(
+                            categoriesList,
+                            getString(R.string.select_category),
+                            "Filter",
+                            "Clear",
+                            ::filterTasksByCategory)
                         true
                     }
                     R.id.select_notification_time -> {
-                        Toast.makeText(requireContext(), "Selecting time...", Toast.LENGTH_SHORT).show()
-                        true
-                    }
-                    R.id.sort_tasks -> {
-                        Toast.makeText(requireContext(), "Sorting tasks...", Toast.LENGTH_SHORT).show()
+                        val notificationTimeList = mutableListOf("Select time...", "10 min", "15 min", "30 min", "60 min")
+                        showSpinnerDialog(
+                            notificationTimeList,
+                            getString(R.string.select_notification_time),
+                            "Confirm",
+                            "Default (5 min)",
+                            ::setNotificationTime
+                        )
                         true
                     }
                     else -> return false
                 }
             }
         }, viewLifecycleOwner)
+
+        binding.taskSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                binding.taskSearchView.clearFocus()
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                val filteredList = if (newText.isNullOrBlank()) {
+                    allTasksList
+                } else {
+                    allTasksList.filter { task ->
+                        task.taskTitle.contains(newText, ignoreCase = true)
+                    }
+                }
+                tasksAdapter.updateList(filteredList)
+                return true
+            }
+        })
+    }
+
+    private fun showSpinnerDialog(
+        listOfElements: MutableList<String>,
+        title: String,
+        positiveButtonText: String,
+        neutralButtonText: String,
+        function : (String) -> Unit) {
+        val dialogView = layoutInflater.inflate(R.layout.select_dialog, null)
+        val spinner = dialogView.findViewById<Spinner>(R.id.selectSpinner)
+
+        val adapter = object : ArrayAdapter<String>(
+            requireContext(),
+            R.layout.dropdown_item,
+            listOfElements
+        ) {
+            override fun isEnabled(position: Int): Boolean {
+                return position != 0
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                val textView = view as TextView
+                textView.setTextColor(if (position == 0) Color.GRAY else Color.BLACK)
+                return view
+            }
+        }
+        spinner.adapter = adapter
+        spinner.setSelection(0)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setView(dialogView)
+            .setPositiveButton(positiveButtonText) {_, _ ->
+                function(spinner.selectedItem.toString())
+            }
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton(neutralButtonText) {_, _ ->
+                function("")
+            }
+            .show()
+    }
+
+    private fun filterTasksByCategory(selectedCategory: String) {
+        val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...") {
+            allTasksList.filter { task ->
+                task.taskCategory == selectedCategory
+            }
+        }
+        else {
+            allTasksList
+        }
+
+        tasksAdapter.updateList(filteredList)
+    }
+
+    private fun setNotificationTime(notificationTime: String) {
+        val minutes =
+            if(notificationTime.isEmpty() && notificationTime != "Select time...") 5
+            else notificationTime.split(" ").first().toLong()
+        NotificationTimePreferences.setNotificationTime(requireContext(), minutes)
     }
 
     private fun setupRecyclerView() {
-        tasksAdapter = TasksAdapter(dbHelper.getAllTasks()) { task ->
-//            val action = FragmentMainDirections.actionFragmentMainToFragmentTaskDetails(task.taskId)
-//            findNavController().navigate(action)
-            Toast.makeText(requireContext(), "Clicked task: ${task.taskTitle}", Toast.LENGTH_SHORT).show()
+        tasksAdapter = TasksAdapter(allTasksList) { task ->
+            val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
+            findNavController().navigate(action)
         }
 
         binding.tasksRecyclerView.apply {

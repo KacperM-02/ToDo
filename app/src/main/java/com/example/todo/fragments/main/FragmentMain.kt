@@ -14,13 +14,13 @@ import android.widget.ArrayAdapter
 import android.widget.SearchView
 import android.widget.Spinner
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
 import com.example.todo.data.sharedPreferences.CategoryPreferences
+import com.example.todo.data.sharedPreferences.NotificationTimePreferences
 import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentMainBinding
@@ -80,15 +80,25 @@ class FragmentMain : Fragment() {
                         true
                     }
                     R.id.select_category -> {
-                        showCategoryDialog()
+                        val categoriesList = CategoryPreferences.loadCategories(requireContext())
+                        categoriesList.addFirst("Select category...")
+                        showSpinnerDialog(
+                            categoriesList,
+                            getString(R.string.select_category),
+                            "Filter",
+                            "Clear",
+                            ::filterTasksByCategory)
                         true
                     }
                     R.id.select_notification_time -> {
-                        Toast.makeText(requireContext(), "Selecting time...", Toast.LENGTH_SHORT).show()
-                        true
-                    }
-                    R.id.sort_tasks -> {
-                        Toast.makeText(requireContext(), "Sorting tasks...", Toast.LENGTH_SHORT).show()
+                        val notificationTimeList = mutableListOf("Select time...", "10 min", "15 min", "30 min", "60 min")
+                        showSpinnerDialog(
+                            notificationTimeList,
+                            getString(R.string.select_notification_time),
+                            "Confirm",
+                            "Default (5 min)",
+                            ::setNotificationTime
+                        )
                         true
                     }
                     else -> return false
@@ -116,17 +126,19 @@ class FragmentMain : Fragment() {
         })
     }
 
-    private fun showCategoryDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_select_category, null)
-        val spinner = dialogView.findViewById<Spinner>(R.id.categorySpinner)
-
-        val categories = CategoryPreferences.loadCategories(requireContext())
-        categories.addFirst("Select category")
+    private fun showSpinnerDialog(
+        listOfElements: MutableList<String>,
+        title: String,
+        positiveButtonText: String,
+        neutralButtonText: String,
+        function : (String) -> Unit) {
+        val dialogView = layoutInflater.inflate(R.layout.select_dialog, null)
+        val spinner = dialogView.findViewById<Spinner>(R.id.selectSpinner)
 
         val adapter = object : ArrayAdapter<String>(
             requireContext(),
             R.layout.dropdown_item,
-            categories
+            listOfElements
         ) {
             override fun isEnabled(position: Int): Boolean {
                 return position != 0
@@ -143,21 +155,20 @@ class FragmentMain : Fragment() {
         spinner.setSelection(0)
 
         AlertDialog.Builder(requireContext())
-            .setTitle(R.string.select_category)
+            .setTitle(title)
             .setView(dialogView)
-            .setPositiveButton("Filter") {_, _ ->
-                filterTasksByCategory(spinner.selectedItem.toString())
+            .setPositiveButton(positiveButtonText) {_, _ ->
+                function(spinner.selectedItem.toString())
             }
             .setNegativeButton("Cancel", null)
-            .setNeutralButton("Clear") {_, _ ->
-                filterTasksByCategory("")
+            .setNeutralButton(neutralButtonText) {_, _ ->
+                function("")
             }
             .show()
-
     }
 
     private fun filterTasksByCategory(selectedCategory: String) {
-        val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category") {
+        val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...") {
             allTasksList.filter { task ->
                 task.taskCategory == selectedCategory
             }
@@ -167,6 +178,13 @@ class FragmentMain : Fragment() {
         }
 
         tasksAdapter.updateList(filteredList)
+    }
+
+    private fun setNotificationTime(notificationTime: String) {
+        val minutes =
+            if(notificationTime.isEmpty() && notificationTime != "Select time...") 5
+            else notificationTime.split(" ").first().toLong()
+        NotificationTimePreferences.setNotificationTime(requireContext(), minutes)
     }
 
     private fun setupRecyclerView() {

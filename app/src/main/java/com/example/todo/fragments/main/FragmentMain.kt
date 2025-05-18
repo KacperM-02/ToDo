@@ -81,20 +81,25 @@ class FragmentMain : Fragment() {
                     }
                     R.id.select_category -> {
                         val categoriesList = CategoryPreferences.loadCategories(requireContext())
+                        val selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
                         categoriesList.addFirst("Select category...")
                         showSpinnerDialog(
                             categoriesList,
                             getString(R.string.select_category),
+                            if(selectedCategory == null) "Selected category: None" else "Selected category: $selectedCategory",
                             "Filter",
                             "Clear",
-                            ::filterTasksByCategory)
+                            ::filterTasksByCategory
+                        )
                         true
                     }
                     R.id.select_notification_time -> {
                         val notificationTimeList = mutableListOf("Select time...", "10 min", "15 min", "30 min", "60 min")
+                        val notificationTime = NotificationTimePreferences.loadNotificationTime(requireContext())
                         showSpinnerDialog(
                             notificationTimeList,
                             getString(R.string.select_notification_time),
+                            "Selected time: $notificationTime min",
                             "Confirm",
                             "Default (5 min)",
                             ::setNotificationTime
@@ -129,11 +134,13 @@ class FragmentMain : Fragment() {
     private fun showSpinnerDialog(
         listOfElements: MutableList<String>,
         title: String,
+        infoText: String,
         positiveButtonText: String,
         neutralButtonText: String,
         function : (String) -> Unit) {
         val dialogView = layoutInflater.inflate(R.layout.select_dialog, null)
         val spinner = dialogView.findViewById<Spinner>(R.id.selectSpinner)
+        dialogView.findViewById<TextView>(R.id.infoTextView).text = infoText
 
         val adapter = object : ArrayAdapter<String>(
             requireContext(),
@@ -169,11 +176,13 @@ class FragmentMain : Fragment() {
 
     private fun filterTasksByCategory(selectedCategory: String) {
         val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...") {
+            CategoryPreferences.setSelectedCategory(requireContext(), selectedCategory)
             allTasksList.filter { task ->
                 task.taskCategory == selectedCategory
             }
         }
         else {
+            CategoryPreferences.setSelectedCategory(requireContext(), null)
             allTasksList
         }
 
@@ -188,7 +197,13 @@ class FragmentMain : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        tasksAdapter = TasksAdapter(allTasksList) { task ->
+        val selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
+        tasksAdapter = TasksAdapter(
+            if(selectedCategory == null) allTasksList
+            else allTasksList.filter { task ->
+                task.taskCategory == selectedCategory
+            }
+        ) { task ->
             val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
             findNavController().navigate(action)
         }

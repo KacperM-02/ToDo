@@ -67,13 +67,13 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             app:endIconMode="dropdown_menu">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                 android:id="@+id/taskCategoryDropdown"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="wrap_content"
                 android:hint="@string/task_category"
                 android:inputType="none"
                 android:focusable="false"
@@ -85,7 +85,7 @@
             style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
             android:id="@+id/taskNotificationToggle"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:text="@string/task_notification"
             android:textAppearance="?attr/textAppearanceBodyLarge"
             android:textAlignment="center"

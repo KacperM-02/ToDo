@@ -4,7 +4,7 @@
     tools:context="com.example.todo.activities.MainActivity">
     <item
         android:id="@+id/show_done_tasks"
-        android:title="@string/show_done_tasks"
+        android:title="@string/hide_done_tasks"
         />
     <item
         android:id="@+id/select_category"

@@ -14,12 +14,13 @@ import android.widget.ArrayAdapter
 import android.widget.SearchView
 import android.widget.Spinner
 import android.widget.TextView
-import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.get
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
 import com.example.todo.data.sharedPreferences.CategoryPreferences
+import com.example.todo.data.sharedPreferences.HideDoneTasksPreferences
 import com.example.todo.data.sharedPreferences.NotificationTimePreferences
 import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
@@ -28,12 +29,13 @@ import com.example.todo.databinding.FragmentMainBinding
 class FragmentMain : Fragment() {
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
+    private var hideCompletedTasks: Boolean = false
+    private var selectedCategory: String? = null
 
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
     private lateinit var allTasksList: MutableList<Task>
 
-    private var showCompletedTasks = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,37 +53,27 @@ class FragmentMain : Fragment() {
         setupRecyclerView()
         setupListeners()
 
-        val menuHost: MenuHost = requireActivity()
-
-        menuHost.addMenuProvider(object : MenuProvider {
+        requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_main, menu)
+                menu[0].title = if(hideCompletedTasks) "Show all tasks"
+                else "Hide completed tasks"
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.show_done_tasks -> {
-                        if(showCompletedTasks == 0)
-                        {
-                            showCompletedTasks = 1
-                            menuItem.title = "Hide completed tasks"
-                        }
-                        else {
-                            showCompletedTasks = 0
-                            menuItem.title = "Show completed tasks"
-                        }
+                        hideCompletedTasks = !hideCompletedTasks
+                        HideDoneTasksPreferences.setHideDoneTasks(requireContext(), hideCompletedTasks)
 
-                        val filteredList = if(showCompletedTasks == 1) {
-                            allTasksList.filter { task ->
-                                task.taskStatus == 1
-                            }
-                        } else allTasksList
-                        tasksAdapter.updateList(filteredList)
+                        tasksAdapter.updateList(getFilteredTasksList(null))
+
+                        menuItem.title = if(hideCompletedTasks) "Show all tasks"
+                        else "Hide completed tasks"
                         true
                     }
                     R.id.select_category -> {
                         val categoriesList = CategoryPreferences.loadCategories(requireContext())
-                        val selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
                         categoriesList.addFirst("Select category...")
                         showSpinnerDialog(
                             categoriesList,
@@ -118,17 +110,35 @@ class FragmentMain : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                val filteredList = if (newText.isNullOrBlank()) {
-                    allTasksList
-                } else {
-                    allTasksList.filter { task ->
-                        task.taskTitle.contains(newText, ignoreCase = true)
-                    }
-                }
-                tasksAdapter.updateList(filteredList)
+                tasksAdapter.updateList(getFilteredTasksList(newText))
                 return true
             }
         })
+    }
+
+    private fun getFilteredTasksList(textFilter: String?) : MutableList<Task> {
+        var filteredTasksList = allTasksList
+        hideCompletedTasks = HideDoneTasksPreferences.loadHideDoneTasks(requireContext())
+        selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
+
+        if(hideCompletedTasks)
+            filteredTasksList = filteredTasksList.filter { task ->
+            task.taskStatus == 0
+        }.toMutableList()
+
+        if(selectedCategory != null) {
+            filteredTasksList = filteredTasksList.filter { task ->
+                task.taskCategory == selectedCategory
+            }.toMutableList()
+        }
+
+        if (!textFilter.isNullOrBlank()) {
+            filteredTasksList = filteredTasksList.filter { task ->
+                task.taskTitle.contains(textFilter, ignoreCase = true)
+            }.toMutableList()
+        }
+
+        return filteredTasksList
     }
 
     private fun showSpinnerDialog(
@@ -175,18 +185,13 @@ class FragmentMain : Fragment() {
     }
 
     private fun filterTasksByCategory(selectedCategory: String) {
-        val filteredList = if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...") {
+        if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...")
             CategoryPreferences.setSelectedCategory(requireContext(), selectedCategory)
-            allTasksList.filter { task ->
-                task.taskCategory == selectedCategory
-            }
-        }
-        else {
+        else
             CategoryPreferences.setSelectedCategory(requireContext(), null)
-            allTasksList
-        }
 
-        tasksAdapter.updateList(filteredList)
+
+        tasksAdapter.updateList(getFilteredTasksList(null))
     }
 
     private fun setNotificationTime(notificationTime: String) {
@@ -197,16 +202,13 @@ class FragmentMain : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        val selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
         tasksAdapter = TasksAdapter(
-            if(selectedCategory == null) allTasksList
-            else allTasksList.filter { task ->
-                task.taskCategory == selectedCategory
-            }
-        ) { task ->
-            val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
-            findNavController().navigate(action)
-        }
+            getFilteredTasksList(null),
+            { task ->
+                val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
+                findNavController().navigate(action)
+                           },
+            requireContext())
 
         binding.tasksRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())

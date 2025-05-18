@@ -31,6 +31,7 @@ class FragmentMain : Fragment() {
     private val binding get() = _binding!!
     private var hideCompletedTasks: Boolean = false
     private var selectedCategory: String? = null
+    private var inputedText: String? = ""
 
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
@@ -66,7 +67,7 @@ class FragmentMain : Fragment() {
                         hideCompletedTasks = !hideCompletedTasks
                         HideDoneTasksPreferences.setHideDoneTasks(requireContext(), hideCompletedTasks)
 
-                        tasksAdapter.updateList(getFilteredTasksList(null))
+                        tasksAdapter.updateList(getFilteredTasksList())
 
                         menuItem.title = if(hideCompletedTasks) "Show all tasks"
                         else "Hide completed tasks"
@@ -110,16 +111,18 @@ class FragmentMain : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                tasksAdapter.updateList(getFilteredTasksList(newText))
+                inputedText = newText
+                tasksAdapter.updateList(getFilteredTasksList())
                 return true
             }
         })
     }
 
-    private fun getFilteredTasksList(textFilter: String?) : MutableList<Task> {
+    private fun getFilteredTasksList() : MutableList<Task> {
         var filteredTasksList = allTasksList
         hideCompletedTasks = HideDoneTasksPreferences.loadHideDoneTasks(requireContext())
         selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
+        val textFilter = inputedText
 
         if(hideCompletedTasks)
             filteredTasksList = filteredTasksList.filter { task ->
@@ -191,7 +194,7 @@ class FragmentMain : Fragment() {
             CategoryPreferences.setSelectedCategory(requireContext(), null)
 
 
-        tasksAdapter.updateList(getFilteredTasksList(null))
+        tasksAdapter.updateList(getFilteredTasksList())
     }
 
     private fun setNotificationTime(notificationTime: String) {
@@ -203,7 +206,7 @@ class FragmentMain : Fragment() {
 
     private fun setupRecyclerView() {
         tasksAdapter = TasksAdapter(
-            getFilteredTasksList(null),
+            getFilteredTasksList(),
             { task ->
                 val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
                 findNavController().navigate(action)

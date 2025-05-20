@@ -36,6 +36,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     private lateinit var attachmentAdapter: AttachmentAdapter
     private lateinit var task: Task
     private lateinit var calendar: Calendar
+    private lateinit var adapter: ArrayAdapter<String>
 
     private var dayOfMonth = 0
     private var month = 0
@@ -60,7 +61,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         calendar = Calendar.getInstance()
         val attachmentsList = mutableListOf<String>()
 
-        initCategoryDropdown(dbHelper.getAllCategories().toMutableList())
+        initCategoryDropdown()
 
         val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
             if(uris.isNotEmpty())
@@ -117,13 +118,15 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         return binding.root
     }
 
-    private fun initCategoryDropdown(categories : MutableList<String>) {
+    private fun initCategoryDropdown() {
+        val categoriesList = dbHelper.getAllCategories().toMutableList()
+        categoriesList.add("+Add new")
         val defaultCategories = listOf("Education", "Home", "Hobby", "Shopping", "Work", "+Add new")
 
-        val adapter = object : ArrayAdapter<String>(
+        adapter = object : ArrayAdapter<String>(
             requireContext(),
             R.layout.category_item,
-            categories.apply { addLast("+Add new") }
+            categoriesList
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.category_item, parent, false)
@@ -141,9 +144,9 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
                             .setMessage("Are you sure you want to delete \"$category\"?")
                             .setPositiveButton("Yes") { _, _ ->
                                 dbHelper.deleteCategory(category)
-                                categories.remove(category)
-                                notifyDataSetChanged()
+                                adapter.remove(category)
                                 binding.taskCategoryDropdown.setText("")
+                                notifyDataSetChanged()
                             }
                             .setNegativeButton("No", null)
                             .show()
@@ -161,12 +164,12 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         binding.taskCategoryDropdown.setOnItemClickListener { _, _, position, _ ->
             if (position == adapter.count - 1) {
                 binding.taskCategoryDropdown.setText("")
-                showAddCategoryDialog(adapter)
+                showAddCategoryDialog()
             }
         }
     }
 
-    private fun showAddCategoryDialog(adapter: ArrayAdapter<String>) {
+    private fun showAddCategoryDialog() {
         val dialogView = layoutInflater.inflate(R.layout.input_dialog, null)
         val input = dialogView.findViewById<TextInputEditText>(R.id.inputCategory)
         val errorText = dialogView.findViewById<TextView>(R.id.errorTextView)
@@ -191,13 +194,16 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
                     if (dbHelper.insertCategory(newCategory) == -1L)
                         errorText.text = getString(R.string.same_category_error)
                     else {
-                        val categories = dbHelper.getAllCategories().toMutableList()
-                        categories.addLast("+Add new")
+                        val categoriesList = dbHelper.getAllCategories().toMutableList()
+                        categoriesList.add("+Add new")
+
                         adapter.clear()
-                        adapter.addAll(categories)
+                        adapter.addAll(categoriesList)
                         adapter.notifyDataSetChanged()
 
-                        binding.taskCategoryDropdown.setText(newCategory, false)
+                        val text = binding.taskCategoryDropdown.text
+                        binding.taskCategoryDropdown.text = text
+                        binding.taskCategoryDropdown.setSelection(0)
                         dialog.dismiss()
                         Toast.makeText(requireContext(), "Added new category!", Toast.LENGTH_LONG).show()
                     }

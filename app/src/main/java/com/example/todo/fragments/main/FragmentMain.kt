@@ -31,7 +31,7 @@ class FragmentMain : Fragment() {
     private val binding get() = _binding!!
     private var hideCompletedTasks: Boolean = false
     private var selectedCategory: String? = null
-    private var inputedText: String? = ""
+    private var inputtedText: String? = ""
 
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
@@ -74,7 +74,7 @@ class FragmentMain : Fragment() {
                         true
                     }
                     R.id.select_category -> {
-                        val categoriesList = CategoryPreferences.loadCategories(requireContext())
+                        val categoriesList = dbHelper.getAllCategories().toMutableList()
                         categoriesList.addFirst("Select category...")
                         showSpinnerDialog(
                             categoriesList,
@@ -111,7 +111,7 @@ class FragmentMain : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                inputedText = newText
+                inputtedText = newText
                 tasksAdapter.updateList(getFilteredTasksList())
                 return true
             }
@@ -122,7 +122,7 @@ class FragmentMain : Fragment() {
         var filteredTasksList = allTasksList
         hideCompletedTasks = HideDoneTasksPreferences.loadHideDoneTasks(requireContext())
         selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
-        val textFilter = inputedText
+        val textFilter = inputtedText
 
         if(hideCompletedTasks)
             filteredTasksList = filteredTasksList.filter { task ->
@@ -151,6 +151,7 @@ class FragmentMain : Fragment() {
         positiveButtonText: String,
         neutralButtonText: String,
         function : (String) -> Unit) {
+
         val dialogView = layoutInflater.inflate(R.layout.select_dialog, null)
         val spinner = dialogView.findViewById<Spinner>(R.id.selectSpinner)
         dialogView.findViewById<TextView>(R.id.infoTextView).text = infoText
@@ -192,7 +193,6 @@ class FragmentMain : Fragment() {
             CategoryPreferences.setSelectedCategory(requireContext(), selectedCategory)
         else
             CategoryPreferences.setSelectedCategory(requireContext(), null)
-
 
         tasksAdapter.updateList(getFilteredTasksList())
     }

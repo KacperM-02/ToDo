@@ -8,6 +8,7 @@
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="wrap_content"
+        android:minWidth="300dp"
         android:layout_height="0dp"
         android:orientation="vertical"
 
@@ -29,6 +30,16 @@
                 android:gravity="start"
                 android:hint="@string/task_title"/>
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Notification -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
+            android:id="@+id/taskNotificationToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/task_notification"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:paddingHorizontal="16dp"/>
 
         <!-- Description -->
         <com.google.android.material.textfield.TextInputLayout
@@ -80,16 +91,6 @@
                 android:clickable="true"/>
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Notification -->
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
-            android:id="@+id/taskNotificationToggle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/task_notification"
-            android:textAppearance="?attr/textAppearanceBodyLarge"
-            android:textAlignment="center"
-            app:switchPadding="10dp"/>
 
         <!-- Attachments -->
         <TextView
@@ -102,13 +103,14 @@
             android:text="@string/attachments"
             android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
 
-        <!-- Przycisk dodawania załączników -->
+        <!-- Add attachments button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/addAttachmentButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/add_attachment"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"/>
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_gravity="center"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/attachmentsRecyclerView"

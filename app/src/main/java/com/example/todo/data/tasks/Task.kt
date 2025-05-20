@@ -13,11 +13,5 @@ data class Task(
     val taskExecutionDate: String = "",
     val taskNotification: Int = 0,
     val taskCategory: String = "",
-    var attachments: List<Attachment> = emptyList()
+    var attachments: List<String> = emptyList()
 ) : Parcelable
-
-@Parcelize
-data class Attachment(
-    val attachmentId: Long = 0,
-    val taskId: Long = 0,
-    val attachmentPath: String = "") : Parcelable

@@ -24,6 +24,9 @@
     <string name="task_category">Category</string>
     <string name="main_search_bar">Search…</string>
     <string name="attachments">Attachments</string>
-    <string name="add_attachment">Add attachment</string>
+    <string name="add_attachment">Add attachments</string>
     <string name="add_task">Add task</string>
+    <string name="input_category">Input new category name…</string>
+    <string name="same_category_error">Inputted category exists!</string>
+    <string name="empty_category_error">Inputted category can\'t be empty!</string>
 </resources>

@@ -1,8 +1,12 @@
 package com.example.todo.fragments.addTask
 
+import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.PendingIntent
 import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
 import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -20,12 +24,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
+import com.example.todo.data.notifications.NotificationReceiver
+import com.example.todo.data.sharedPreferences.NotificationTimePreferences
 import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentAddTaskBinding
 import com.google.android.material.textfield.TextInputEditText
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 
@@ -34,7 +41,6 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
 
     private lateinit var dbHelper: TasksDatabaseHelper
     private lateinit var attachmentAdapter: AttachmentAdapter
-    private lateinit var task: Task
     private lateinit var calendar: Calendar
     private lateinit var adapter: ArrayAdapter<String>
 
@@ -57,7 +63,6 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     ): View {
         _binding = FragmentAddTaskBinding.inflate(inflater, container, false)
         dbHelper = TasksDatabaseHelper(requireContext())
-        task = Task()
         calendar = Calendar.getInstance()
         val attachmentsList = mutableListOf<String>()
 
@@ -84,7 +89,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         }
 
         binding.addTaskButton.setOnClickListener {
-            task = Task(
+            val task = Task(
                 taskTitle = binding.taskTitleInput.text.toString(),
                 taskDescription = binding.taskDescriptionInput.text.toString(),
                 taskCreationTime = LocalDate.now().toString(),
@@ -96,13 +101,21 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
             if(!validateTask(task)) Toast.makeText(requireContext(), "Fill the title, " +
                     "execution date or choose task category!", Toast.LENGTH_LONG).show()
             else{
-                val taskId = dbHelper.insertTask(task)
-                for (a in attachmentsList) {
-                    dbHelper.insertAttachment(a, taskId)
-                }
+                scheduleTaskNotification(requireContext(), task)
 
-                Toast.makeText(requireContext(), "Task added!", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.FragmentAddTaskToFragmentMainAction)
+                val taskId = dbHelper.insertTask(task)
+                if(taskId == -1L){
+                    Toast.makeText(requireContext(), "Couldn't add task!", Toast.LENGTH_LONG).show()
+                }
+                else {
+                    for (a in attachmentsList) {
+                        dbHelper.insertAttachment(a, taskId)
+                    }
+
+
+                    Toast.makeText(requireContext(), "Task added!", Toast.LENGTH_SHORT).show()
+                    findNavController().navigate(R.id.FragmentAddTaskToFragmentMainAction)
+                }
             }
         }
 
@@ -263,5 +276,42 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
         val dateTime = LocalDateTime.of(year, month, dayOfMonth, hourOfDay, minute)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         return dateTime.format(formatter)
+    }
+
+    private fun scheduleTaskNotification(context: Context, task: Task) {
+        if (task.taskNotification == 0) return
+
+        val notificationOffsetMinutes = NotificationTimePreferences.loadNotificationTime(context)
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("title", task.taskTitle)
+            putExtra("description", task.taskDescription)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            task.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val executionDateTime = LocalDateTime.parse(task.taskExecutionDate, formatter)
+
+        val triggerTimeMillis = executionDateTime
+            .atZone(ZoneId.systemDefault())
+            .minusMinutes(notificationOffsetMinutes)
+            .toInstant()
+            .toEpochMilli()
+
+
+        if (triggerTimeMillis > System.currentTimeMillis() && alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerTimeMillis,
+                pendingIntent
+            )
+        }
     }
 }

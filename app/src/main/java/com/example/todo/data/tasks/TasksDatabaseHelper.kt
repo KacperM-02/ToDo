@@ -22,49 +22,50 @@ import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_STATUS
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_TITLE
 import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_ATTACHMENTS
 import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_CATEGORIES
-import androidx.core.database.sqlite.transaction
 
 class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase?) {
-        // Tasks table
-        val createTasksTable = """
-            CREATE TABLE IF NOT EXISTS $TABLE_TASKS (
-                $COLUMN_TASK_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_TASK_TITLE TEXT NOT NULL,
-                $COLUMN_TASK_STATUS INTEGER NOT NULL DEFAULT 0,
-                $COLUMN_TASK_DESCRIPTION TEXT,
-                $COLUMN_TASK_CREATION_TIME TEXT NOT NULL,
-                $COLUMN_TASK_EXECUTION_DATE TEXT NOT NULL,
-                $COLUMN_TASK_NOTIFICATION INTEGER NOT NULL DEFAULT 0,
-                $COLUMN_TASK_CATEGORY_ID INTEGER NOT NULL
-            )
-        """.trimIndent()
-
-        // Attachments table
-        val createAttachmentsTable = """
-            CREATE TABLE IF NOT EXISTS $TABLE_ATTACHMENTS (
-                $COLUMN_ATTACHMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_ATTACHMENT_TASK_ID INTEGER NOT NULL,
-                $COLUMN_ATTACHMENT_PATH TEXT NOT NULL,
-                FOREIGN KEY ($COLUMN_ATTACHMENT_TASK_ID) REFERENCES $TABLE_TASKS($COLUMN_TASK_ID) ON DELETE CASCADE
-            )
-        """.trimIndent()
-
-        // Categories table
+        // 1. Categories table
         val createCategoriesTable = """
-            CREATE TABLE IF NOT EXISTS $TABLE_CATEGORIES (
-                $COLUMN_CATEGORY_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_CATEGORY_NAME TEXT UNIQUE NOT NULL COLLATE NOCASE
-            )
-        """.trimIndent()
+        CREATE TABLE IF NOT EXISTS $TABLE_CATEGORIES (
+            $COLUMN_CATEGORY_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_CATEGORY_NAME TEXT UNIQUE NOT NULL COLLATE NOCASE
+        )
+    """.trimIndent()
 
-        db?.execSQL(createTasksTable)
-        db?.execSQL(createAttachmentsTable)
-        db?.execSQL(createCategoriesTable)
+        // 2. Tasks table
+        val createTasksTable = """
+        CREATE TABLE IF NOT EXISTS $TABLE_TASKS (
+            $COLUMN_TASK_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_TASK_TITLE TEXT NOT NULL,
+            $COLUMN_TASK_STATUS INTEGER NOT NULL DEFAULT 0,
+            $COLUMN_TASK_DESCRIPTION TEXT,
+            $COLUMN_TASK_CREATION_TIME TEXT NOT NULL,
+            $COLUMN_TASK_EXECUTION_DATE TEXT NOT NULL,
+            $COLUMN_TASK_NOTIFICATION INTEGER NOT NULL DEFAULT 0,
+            $COLUMN_TASK_CATEGORY_ID INTEGER NOT NULL,
+            FOREIGN KEY ($COLUMN_TASK_CATEGORY_ID) REFERENCES $TABLE_CATEGORIES($COLUMN_CATEGORY_ID)
+        )
+    """.trimIndent()
 
-        val initialCategories = listOf("Education", "Home", "Hobby", "Shopping", "Work")
-        db?.transaction {
+        // 3. Attachments table
+        val createAttachmentsTable = """
+        CREATE TABLE IF NOT EXISTS $TABLE_ATTACHMENTS (
+            $COLUMN_ATTACHMENT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_ATTACHMENT_TASK_ID INTEGER NOT NULL,
+            $COLUMN_ATTACHMENT_PATH TEXT NOT NULL,
+            FOREIGN KEY ($COLUMN_ATTACHMENT_TASK_ID) REFERENCES $TABLE_TASKS($COLUMN_TASK_ID) ON DELETE CASCADE
+        )
+    """.trimIndent()
+
+        db?.apply {
+            execSQL(createCategoriesTable)
+            execSQL(createTasksTable)
+            execSQL(createAttachmentsTable)
+
+            beginTransaction()
             try {
+                val initialCategories = listOf("Education", "Home", "Hobby", "Shopping", "Work")
                 val values = ContentValues()
                 for (category in initialCategories) {
                     values.clear()
@@ -76,9 +77,16 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
                         SQLiteDatabase.CONFLICT_IGNORE
                     )
                 }
+                setTransactionSuccessful()
             } finally {
+                endTransaction()
             }
         }
+    }
+
+    override fun onConfigure(db: SQLiteDatabase?) {
+        super.onConfigure(db)
+        db?.setForeignKeyConstraintsEnabled(true)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
@@ -92,6 +100,9 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     // Adding task
     fun insertTask(task: Task): Long {
         val db = writableDatabase
+        val categoryId = getCategoryIdByName(task.taskCategory)
+        if(categoryId == -1L) return categoryId
+
         val values = ContentValues().apply {
             put(COLUMN_TASK_TITLE, task.taskTitle)
             put(COLUMN_TASK_STATUS, task.taskStatus)
@@ -99,7 +110,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
             put(COLUMN_TASK_CREATION_TIME, task.taskCreationTime)
             put(COLUMN_TASK_EXECUTION_DATE, task.taskExecutionDate)
             put(COLUMN_TASK_NOTIFICATION, task.taskNotification)
-            put(COLUMN_TASK_CATEGORY_ID, task.taskCategory)
+            put(COLUMN_TASK_CATEGORY_ID, categoryId)
         }
         return db.insert(TABLE_TASKS, null, values).also { db.close() }
     }
@@ -119,7 +130,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
             t.$COLUMN_TASK_NOTIFICATION,
             c.$COLUMN_CATEGORY_NAME
             FROM $TABLE_TASKS t
-            LEFT JOIN $TABLE_CATEGORIES c ON t.$COLUMN_TASK_CATEGORY_ID = c.$COLUMN_CATEGORY_ID
+            INNER JOIN $TABLE_CATEGORIES c ON t.$COLUMN_TASK_CATEGORY_ID = c.$COLUMN_CATEGORY_ID
             ORDER BY t.$COLUMN_TASK_EXECUTION_DATE ASC
         """.trimIndent()
 
@@ -188,6 +199,26 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
 
 
     //Categories table
+    // Getting category id
+    private fun getCategoryIdByName(categoryName: String): Long {
+        val db = readableDatabase
+        val cursor = db.query(
+            TABLE_CATEGORIES,
+            arrayOf(COLUMN_CATEGORY_ID),
+            "$COLUMN_CATEGORY_NAME = ?",
+            arrayOf(categoryName),
+            null, null, null
+        )
+
+        cursor.use {
+            return if (cursor.moveToFirst()) {
+                cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_CATEGORY_ID))
+            } else {
+                -1L
+            }
+        }
+    }
+
     // Getting all categories
     fun getAllCategories() : List<String> {
         val db = readableDatabase

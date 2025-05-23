@@ -16,11 +16,13 @@
     <string name="select_notification_time">Select notification time</string>
     <string name="sort_tasks">Sort tasks</string>
     <string name="execution_date">Execution date</string>
-    <string name="task_creation_time">Creation time</string>
-    <string name="task_status">Status</string>
+    <string name="task_creation_time">Creation time: %s</string>
+    <string name="task_status">Status: %s</string>
     <string name="task_notification">Notification</string>
     <string name="task_edit">Edit task</string>
     <string name="task_changes_save">Save changes</string>
+    <string name="task_make_done">Make done</string>
+    <string name="task_make_undone">Make undone</string>
     <string name="task_category">Category</string>
     <string name="main_search_bar">Search…</string>
     <string name="attachments">Attachments</string>

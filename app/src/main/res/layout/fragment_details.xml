@@ -157,6 +157,7 @@
         app:layout_constraintRight_toRightOf="parent">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/taskEditButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -167,6 +168,7 @@
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/taskSaveChangesButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -178,6 +180,7 @@
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/taskMakeDoneUndone"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"

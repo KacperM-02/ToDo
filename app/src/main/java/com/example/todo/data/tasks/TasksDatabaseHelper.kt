@@ -5,9 +5,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_ID
-import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_NAME
-import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_VERSION
-import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_TASKS
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_PATH
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_CATEGORY_ID
@@ -20,10 +17,14 @@ import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_ID
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_NOTIFICATION
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_STATUS
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_TASK_TITLE
+import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_NAME
+import com.example.todo.data.tasks.TaskContract.TaskEntry.DATABASE_VERSION
 import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_ATTACHMENTS
 import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_CATEGORIES
+import com.example.todo.data.tasks.TaskContract.TaskEntry.TABLE_TASKS
 
-class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class TasksDatabaseHelper(context: Context) :
+    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase?) {
         // 1. Categories table
         val createCategoriesTable = """
@@ -101,7 +102,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     fun insertTask(task: Task): Long {
         val db = writableDatabase
         val categoryId = getCategoryIdByName(task.taskCategory)
-        if(categoryId == -1L) return categoryId
+        if (categoryId == -1L) return categoryId
 
         val values = ContentValues().apply {
             put(COLUMN_TASK_TITLE, task.taskTitle)
@@ -148,11 +149,31 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
                         taskId = taskId,
                         taskTitle = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_TITLE)),
                         taskStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TASK_STATUS)),
-                        taskDescription = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_DESCRIPTION)),
-                        taskCreationTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_CREATION_TIME)),
-                        taskExecutionDate = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_EXECUTION_DATE)),
-                        taskNotification = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TASK_NOTIFICATION)),
-                        taskCategory = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_CATEGORY_NAME)),
+                        taskDescription = cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                COLUMN_TASK_DESCRIPTION
+                            )
+                        ),
+                        taskCreationTime = cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                COLUMN_TASK_CREATION_TIME
+                            )
+                        ),
+                        taskExecutionDate = cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                COLUMN_TASK_EXECUTION_DATE
+                            )
+                        ),
+                        taskNotification = cursor.getInt(
+                            cursor.getColumnIndexOrThrow(
+                                COLUMN_TASK_NOTIFICATION
+                            )
+                        ),
+                        taskCategory = cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                COLUMN_CATEGORY_NAME
+                            )
+                        ),
                         attachments = attachments
                     )
                 )
@@ -161,6 +182,34 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
 
         db.close()
         return tasks
+    }
+
+    // Updating task status
+    fun updateTaskStatus(taskId: Long, newStatus: Int): Int {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put(COLUMN_TASK_STATUS, newStatus)
+        }
+        val rowsUpdated = db.update(
+            TABLE_TASKS,
+            values,
+            "$COLUMN_TASK_ID = ?",
+            arrayOf(taskId.toString())
+        )
+        db.close()
+        return rowsUpdated
+    }
+
+    // Delete task
+    fun deleteTask(taskId: Long): Int {
+        val db = writableDatabase
+        val rowsDeleted = db.delete(
+            TABLE_TASKS,
+            "$COLUMN_TASK_ID = ?",
+            arrayOf(taskId.toString())
+        )
+        db.close()
+        return rowsDeleted
     }
 
 
@@ -220,7 +269,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     }
 
     // Getting all categories
-    fun getAllCategories() : List<String> {
+    fun getAllCategories(): List<String> {
         val db = readableDatabase
         val categories = mutableListOf<String>()
 
@@ -244,7 +293,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     }
 
     // Adding category
-    fun insertCategory(categoryName : String) : Long {
+    fun insertCategory(categoryName: String): Long {
         val db = writableDatabase
         val values = ContentValues().apply {
             put(COLUMN_CATEGORY_NAME, categoryName)
@@ -253,6 +302,7 @@ class TasksDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         return db.insert(TABLE_CATEGORIES, null, values).also { db.close() }
     }
 
+    // Delete category
     fun deleteCategory(categoryName: String): Int {
         val db = writableDatabase
         val deletedRows = db.delete(

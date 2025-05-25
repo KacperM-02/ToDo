@@ -8,18 +8,27 @@ import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo.R
 
-class AttachmentAdapter (
+
+class AttachmentAdapter(
     private val attachmentsList: MutableList<String>,
-    private val onDeleteClickListener: (String) -> Unit
+    private var onDeleteAttachmentFunction: ((String) -> Unit)?
 ) : RecyclerView.Adapter<AttachmentAdapter.AttachmentViewHolder>() {
+
     inner class AttachmentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val attachmentImage: ImageView = itemView.findViewById(R.id.attachmentImage)
         private val deleteImageButton: ImageView = itemView.findViewById(R.id.deleteAttachmentImage)
 
         fun bind(attachmentPath: String) {
             attachmentImage.setImageURI(attachmentPath.toUri())
-            deleteImageButton.setOnClickListener {
-                onDeleteClickListener(attachmentPath)
+
+            if (onDeleteAttachmentFunction != null) {
+                deleteImageButton.visibility = View.VISIBLE
+                deleteImageButton.setOnClickListener {
+                    onDeleteAttachmentFunction?.invoke(attachmentPath)
+                }
+            } else {
+                deleteImageButton.visibility = View.GONE
+                deleteImageButton.setOnClickListener(null)
             }
         }
     }
@@ -42,5 +51,10 @@ class AttachmentAdapter (
             attachmentsList.removeAt(position)
             notifyItemRemoved(position)
         }
+    }
+
+    fun updateOnDeleteAttachmentFunction(newFunction: ((String) -> Unit)?) {
+        onDeleteAttachmentFunction = newFunction
+        notifyDataSetChanged()
     }
 }

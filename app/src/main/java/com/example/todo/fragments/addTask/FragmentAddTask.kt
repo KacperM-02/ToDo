@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.icu.util.Calendar
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +20,7 @@ import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
@@ -36,7 +36,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 
-class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener {
+class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
+    TimePickerDialog.OnTimeSetListener {
     private var _binding: FragmentAddTaskBinding? = null
 
     private lateinit var dbHelper: TasksDatabaseHelper
@@ -68,25 +69,20 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
 
         initCategoryDropdown()
 
-        val pickMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
-            if(uris.isNotEmpty())
-            {
-                attachmentsList.clear()
-                uris.forEach { uri ->
-                    attachmentsList.add(uri.toString())
-                }
-
-                attachmentAdapter = AttachmentAdapter(attachmentsList) { attachment ->
-                    attachmentAdapter.removeAttachment(attachment)
-                    attachmentsList.remove(attachment)
-                }
-
-                binding.attachmentsRecyclerView.apply {
-                    layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                    adapter = attachmentAdapter
+        val pickMedia =
+            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
+                if (uris.isNotEmpty()) {
+                    attachmentsList.clear()
+                    uris.forEach { uri ->
+                        attachmentsList.add(uri.toString())
+                        requireContext().contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+                    attachmentAdapter.notifyDataSetChanged()
                 }
             }
-        }
 
         binding.addTaskButton.setOnClickListener {
             val task = Task(
@@ -94,20 +90,21 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
                 taskDescription = binding.taskDescriptionInput.text.toString(),
                 taskCreationTime = LocalDate.now().toString(),
                 taskExecutionDate = binding.taskExecutionDate.text.toString(),
-                taskNotification = if(binding.taskNotificationToggle.isChecked) 1 else 0,
+                taskNotification = if (binding.taskNotificationToggle.isChecked) 1 else 0,
                 taskCategory = binding.taskCategoryDropdown.text.toString(),
             )
 
-            if(!validateTask(task)) Toast.makeText(requireContext(), "Fill the title, " +
-                    "execution date or choose task category!", Toast.LENGTH_LONG).show()
-            else{
+            if (!validateTask(task)) Toast.makeText(
+                requireContext(), "Fill the title, " +
+                        "execution date or choose task category!", Toast.LENGTH_LONG
+            ).show()
+            else {
                 scheduleTaskNotification(requireContext(), task)
 
                 val taskId = dbHelper.insertTask(task)
-                if(taskId == -1L){
+                if (taskId == -1L) {
                     Toast.makeText(requireContext(), "Couldn't add task!", Toast.LENGTH_LONG).show()
-                }
-                else {
+                } else {
                     for (a in attachmentsList) {
                         dbHelper.insertAttachment(a, taskId)
                     }
@@ -128,6 +125,17 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
+        attachmentAdapter = AttachmentAdapter(attachmentsList) { attachment ->
+            attachmentAdapter.removeAttachment(attachment)
+            attachmentsList.remove(attachment)
+        }
+
+        binding.attachmentsRecyclerView.apply {
+            layoutManager =
+                LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = attachmentAdapter
+        }
+
         return binding.root
     }
 
@@ -142,7 +150,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
             categoriesList
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.category_item, parent, false)
+                val view = convertView ?: LayoutInflater.from(context)
+                    .inflate(R.layout.category_item, parent, false)
                 val textView = view.findViewById<TextView>(R.id.categoryText)
                 val deleteIcon = view.findViewById<ImageView>(R.id.deleteIcon)
                 val category = getItem(position) ?: ""
@@ -218,10 +227,10 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
                         binding.taskCategoryDropdown.text = text
                         binding.taskCategoryDropdown.setSelection(0)
                         dialog.dismiss()
-                        Toast.makeText(requireContext(), "Added new category!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "Added new category!", Toast.LENGTH_LONG)
+                            .show()
                     }
-                }
-                else
+                } else
                     errorText.text = getString(R.string.empty_category_error)
             }
         }
@@ -262,7 +271,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener, TimePick
     }
 
     override fun onTimeSet(view: TimePicker?, hourOfDay: Int, minute: Int) {
-        val selectedDate = convertDate(selectedYear, selectedMonth, selectedDayOfMonth, hourOfDay, minute)
+        val selectedDate =
+            convertDate(selectedYear, selectedMonth, selectedDayOfMonth, hourOfDay, minute)
         binding.taskExecutionDate.setText(selectedDate)
     }
 

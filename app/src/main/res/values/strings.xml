@@ -16,7 +16,7 @@
     <string name="select_notification_time">Select notification time</string>
     <string name="sort_tasks">Sort tasks</string>
     <string name="execution_date">Execution date</string>
-    <string name="task_creation_time">Creation time: %s</string>
+    <string name="task_creation_time">Creation date: %s</string>
     <string name="task_status">Status: %s</string>
     <string name="task_notification">Notification</string>
     <string name="task_edit">Edit task</string>
@@ -31,4 +31,5 @@
     <string name="input_category">Input new category name…</string>
     <string name="same_category_error">Inputted category exists!</string>
     <string name="empty_category_error">Inputted category can\'t be empty!</string>
+    <string name="task_delete">Delete</string>
 </resources>

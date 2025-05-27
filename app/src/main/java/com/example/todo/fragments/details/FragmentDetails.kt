@@ -84,6 +84,10 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                     attachmentsList.clear()
                     uris.forEach { uri ->
                         attachmentsList.add(uri.toString())
+                        requireContext().contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
                     }
                     attachmentAdapter.notifyDataSetChanged()
                     checkForChanges()
@@ -111,6 +115,44 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             toggleEditing()
         }
 
+        binding.taskSaveChangesButton.setOnClickListener {
+            taskDetails.taskTitle = binding.taskTitleInput.text.toString()
+            taskDetails.taskDescription = binding.taskDescriptionInput.text.toString()
+            taskDetails.taskExecutionDate = binding.taskExecutionDate.text.toString()
+            taskDetails.taskNotification = if (binding.taskNotificationToggle.isChecked) 1 else 0
+            taskDetails.taskCategory = binding.taskCategoryDropdown.text.toString()
+            taskDetails.attachments = attachmentsList
+
+            if (!validateTask(taskDetails)) Toast.makeText(
+                requireContext(), "Fill the title, " +
+                        "execution date or choose task category!", Toast.LENGTH_LONG
+            ).show()
+            else {
+                if (taskDetails.taskNotification != taskOriginalDetails.taskNotification) {
+                    when (taskDetails.taskNotification) {
+                        1 -> scheduleTaskNotification(requireContext(), taskDetails)
+                        0 -> cancelTaskNotification(requireContext(), taskDetails)
+                    }
+                }
+                if (taskDetails.taskStatus != taskOriginalDetails.taskStatus) {
+                    when (taskDetails.taskStatus) {
+                        1 -> cancelTaskNotification(requireContext(), taskDetails)
+                        0 -> if (taskDetails.taskNotification == 1)
+                            scheduleTaskNotification(requireContext(), taskDetails)
+                    }
+                }
+
+                if (!dbHelper.updateTask(taskDetails)) {
+                    Toast.makeText(requireContext(), "Couldn't update task!", Toast.LENGTH_LONG)
+                        .show()
+                } else {
+                    Toast.makeText(requireContext(), "Task updated!", Toast.LENGTH_SHORT).show()
+                    taskOriginalDetails = taskDetails.copy()
+                    setInitialData()
+                }
+            }
+        }
+
         binding.taskMakeDoneUndone.setOnClickListener {
             updateTaskStatus()
         }
@@ -119,6 +161,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             AlertDialog.Builder(requireContext())
                 .setTitle("Are you sure you want to delete the task?")
                 .setPositiveButton("Yes") { _, _ ->
+                    cancelTaskNotification(requireContext(), taskOriginalDetails)
                     dbHelper.deleteTask(taskDetails.taskId)
                     findNavController().navigate(R.id.FragmentDetailsToFragmentMainAction)
                 }
@@ -345,7 +388,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            task.hashCode(),
+            task.taskId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -367,6 +410,24 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                 pendingIntent
             )
         }
+    }
+
+    private fun cancelTaskNotification(context: Context, task: Task) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("title", task.taskTitle)
+            putExtra("description", task.taskDescription)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            task.taskId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.cancel(pendingIntent)
     }
 
     private fun toggleEditing() {

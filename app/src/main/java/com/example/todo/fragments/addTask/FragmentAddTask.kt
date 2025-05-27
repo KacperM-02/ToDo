@@ -109,7 +109,6 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                         dbHelper.insertAttachment(a, taskId)
                     }
 
-
                     Toast.makeText(requireContext(), "Task added!", Toast.LENGTH_SHORT).show()
                     findNavController().navigate(R.id.FragmentAddTaskToFragmentMainAction)
                 }
@@ -301,7 +300,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            task.hashCode(),
+            task.taskId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

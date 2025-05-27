@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.core.database.sqlite.transaction
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_ID
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_PATH
 import com.example.todo.data.tasks.TaskContract.TaskEntry.COLUMN_ATTACHMENT_TASK_ID
@@ -184,22 +185,6 @@ class TasksDatabaseHelper(context: Context) :
         return tasks
     }
 
-    // Updating task status
-    fun updateTaskStatus(taskId: Long, newStatus: Int): Int {
-        val db = writableDatabase
-        val values = ContentValues().apply {
-            put(COLUMN_TASK_STATUS, newStatus)
-        }
-        val rowsUpdated = db.update(
-            TABLE_TASKS,
-            values,
-            "$COLUMN_TASK_ID = ?",
-            arrayOf(taskId.toString())
-        )
-        db.close()
-        return rowsUpdated
-    }
-
     // Delete task
     fun deleteTask(taskId: Long): Int {
         val db = writableDatabase
@@ -210,6 +195,53 @@ class TasksDatabaseHelper(context: Context) :
         )
         db.close()
         return rowsDeleted
+    }
+
+    // Update task
+    fun updateTask(task: Task): Boolean {
+        val db = writableDatabase
+        var success = false
+        db.transaction {
+            val categoryId = getCategoryIdByName(task.taskCategory)
+            if (categoryId == -1L) return false
+
+            val values = ContentValues().apply {
+                put(COLUMN_TASK_TITLE, task.taskTitle)
+                put(COLUMN_TASK_STATUS, task.taskStatus)
+                put(COLUMN_TASK_DESCRIPTION, task.taskDescription)
+                put(COLUMN_TASK_CREATION_TIME, task.taskCreationTime)
+                put(COLUMN_TASK_EXECUTION_DATE, task.taskExecutionDate)
+                put(COLUMN_TASK_NOTIFICATION, task.taskNotification)
+                put(COLUMN_TASK_CATEGORY_ID, categoryId)
+            }
+
+            val rowsUpdated = update(
+                TABLE_TASKS,
+                values,
+                "$COLUMN_TASK_ID = ?",
+                arrayOf(task.taskId.toString())
+            )
+
+            delete(
+                TABLE_ATTACHMENTS,
+                "$COLUMN_ATTACHMENT_TASK_ID = ?",
+                arrayOf(task.taskId.toString())
+            )
+
+            val attachmentValues = ContentValues()
+            for (attachmentPath in task.attachments) {
+                attachmentValues.clear()
+                attachmentValues.put(COLUMN_ATTACHMENT_TASK_ID, task.taskId)
+                attachmentValues.put(COLUMN_ATTACHMENT_PATH, attachmentPath)
+                insert(TABLE_ATTACHMENTS, null, attachmentValues)
+            }
+
+            success = rowsUpdated > 0
+
+            db.close()
+        }
+        
+        return success
     }
 
 

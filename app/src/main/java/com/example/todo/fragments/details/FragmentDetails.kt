@@ -47,8 +47,8 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
 
     private lateinit var dbHelper: TasksDatabaseHelper
     private lateinit var attachmentAdapter: AttachmentAdapter
+    private lateinit var categoriesAdapter: ArrayAdapter<String>
     private lateinit var calendar: Calendar
-    private lateinit var adapter: ArrayAdapter<String>
     private lateinit var taskDetails: Task
     private lateinit var taskOriginalDetails: Task
     private lateinit var pickMedia: ActivityResultLauncher<PickVisualMediaRequest>
@@ -74,18 +74,41 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         dbHelper = TasksDatabaseHelper(requireContext())
         calendar = Calendar.getInstance()
 
-        taskDetails = args.taskDetails
-        taskOriginalDetails = args.taskDetails
+        taskOriginalDetails = args.taskDetails.copy()
 
         setInitialData()
-        initCategoryDropdown()
+
+        pickMedia =
+            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
+                if (uris.isNotEmpty()) {
+                    attachmentsList.clear()
+                    uris.forEach { uri ->
+                        attachmentsList.add(uri.toString())
+                    }
+                    attachmentAdapter.notifyDataSetChanged()
+                    checkForChanges()
+                }
+            }
+
+        binding.taskTitleInput.addTextChangedListener { checkForChanges() }
+        binding.taskDescriptionInput.addTextChangedListener { checkForChanges() }
+        binding.taskExecutionDate.addTextChangedListener { checkForChanges() }
+        binding.taskCategoryDropdown.addTextChangedListener { checkForChanges() }
+        binding.taskNotificationToggle.setOnCheckedChangeListener { _, _ ->
+            checkForChanges()
+        }
+
+        binding.taskExecutionDate.setOnClickListener {
+            setCalendarDate()
+            DatePickerDialog(requireContext(), this, year, month, dayOfMonth).show()
+        }
 
         binding.addAttachmentButton.setOnClickListener {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
         binding.taskEditButton.setOnClickListener {
-            enableEditing()
+            toggleEditing()
         }
 
         binding.taskMakeDoneUndone.setOnClickListener {
@@ -107,27 +130,29 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
     }
 
     private fun setInitialData() {
-        binding.taskTitleInput.setText(taskDetails.taskTitle)
+        taskDetails = taskOriginalDetails.copy()
+
+        binding.taskTitleInput.setText(taskOriginalDetails.taskTitle)
         binding.taskStatusText.text = getString(
             R.string.task_status,
-            if (taskDetails.taskStatus == 1) "Done" else "Undone"
+            if (taskOriginalDetails.taskStatus == 1) "Done" else "Undone"
         )
         binding.taskCreationTimeText.text = getString(
             R.string.task_creation_time,
-            taskDetails.taskCreationTime
+            taskOriginalDetails.taskCreationTime
         )
         binding.taskNotificationToggle.isChecked =
-            taskDetails.taskNotification == 1
-        binding.taskDescriptionInput.setText(taskDetails.taskDescription)
-        binding.taskExecutionDate.setText(taskDetails.taskExecutionDate)
-        binding.taskCategoryDropdown.setText(taskDetails.taskCategory)
+            taskOriginalDetails.taskNotification == 1
+        binding.taskDescriptionInput.setText(taskOriginalDetails.taskDescription)
+        binding.taskExecutionDate.setText(taskOriginalDetails.taskExecutionDate)
+        binding.taskCategoryDropdown.setText(taskOriginalDetails.taskCategory)
         binding.taskMakeDoneUndone.text =
             getString(
-                if (taskDetails.taskStatus == 1)
+                if (taskOriginalDetails.taskStatus == 1)
                     R.string.task_make_undone else R.string.task_make_done
             )
 
-        attachmentsList = taskDetails.attachments.toMutableList()
+        attachmentsList = taskOriginalDetails.attachments.toMutableList()
         attachmentAdapter = AttachmentAdapter(attachmentsList, null)
         binding.attachmentsRecyclerView.apply {
             layoutManager =
@@ -135,23 +160,12 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             adapter = attachmentAdapter
         }
 
-        pickMedia =
-            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
-                if (uris.isNotEmpty()) {
-                    attachmentsList.clear()
-                    uris.forEach { uri ->
-                        attachmentsList.add(uri.toString())
-                    }
-                    attachmentAdapter.notifyDataSetChanged()
-                    checkForChanges()
-                }
-            }
+        initCategoryDropdown()
     }
 
     private fun updateTaskStatus() {
         binding.taskStatusText.text = when (taskDetails.taskStatus) {
             1 -> {
-                dbHelper.updateTaskStatus(taskDetails.taskId, 0)
                 taskDetails.taskStatus = 0
                 binding.taskMakeDoneUndone.text = getString(R.string.task_make_done)
                 getString(
@@ -160,7 +174,6 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             }
 
             else -> {
-                dbHelper.updateTaskStatus(taskDetails.taskId, 1)
                 taskDetails.taskStatus = 1
                 binding.taskMakeDoneUndone.text = getString(R.string.task_make_undone)
                 getString(
@@ -168,6 +181,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                 )
             }
         }
+        checkForChanges()
     }
 
     private fun initCategoryDropdown() {
@@ -175,7 +189,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         categoriesList.add("+Add new")
         val defaultCategories = listOf("Education", "Home", "Hobby", "Shopping", "Work", "+Add new")
 
-        adapter = object : ArrayAdapter<String>(
+        categoriesAdapter = object : ArrayAdapter<String>(
             requireContext(),
             R.layout.category_item,
             categoriesList
@@ -197,7 +211,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                             .setMessage("Are you sure you want to delete \"$category\"?")
                             .setPositiveButton("Yes") { _, _ ->
                                 dbHelper.deleteCategory(category)
-                                adapter.remove(category)
+                                categoriesAdapter.remove(category)
                                 notifyDataSetChanged()
                             }
                             .setNegativeButton("No", null)
@@ -212,9 +226,9 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             }
         }
 
-        binding.taskCategoryDropdown.setAdapter(adapter)
+        binding.taskCategoryDropdown.setAdapter(categoriesAdapter)
         binding.taskCategoryDropdown.setOnItemClickListener { _, _, position, _ ->
-            if (position == adapter.count - 1) {
+            if (position == categoriesAdapter.count - 1) {
                 binding.taskCategoryDropdown.setText("")
                 showAddCategoryDialog()
             }
@@ -249,9 +263,9 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                         val categoriesList = dbHelper.getAllCategories().toMutableList()
                         categoriesList.add("+Add new")
 
-                        adapter.clear()
-                        adapter.addAll(categoriesList)
-                        adapter.notifyDataSetChanged()
+                        categoriesAdapter.clear()
+                        categoriesAdapter.addAll(categoriesList)
+                        categoriesAdapter.notifyDataSetChanged()
 
                         val text = binding.taskCategoryDropdown.text
                         binding.taskCategoryDropdown.text = text
@@ -355,25 +369,33 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         }
     }
 
-    private fun enableEditing() {
-        binding.taskTitleInput.isEnabled = true
-        binding.taskDescriptionInput.isEnabled = true
-        binding.taskExecutionDate.isEnabled = true
-        binding.taskCategoryDropdown.isEnabled = true
-        binding.taskNotificationToggle.isEnabled = true
-        binding.addAttachmentButton.isEnabled = true
+    private fun toggleEditing() {
+        if (binding.taskEditButton.text == getString(R.string.task_edit)) {
+            binding.taskTitleInput.isEnabled = true
+            binding.taskDescriptionInput.isEnabled = true
+            binding.taskExecutionDate.isEnabled = true
+            binding.taskCategoryDropdown.isEnabled = true
+            binding.taskNotificationToggle.isEnabled = true
+            binding.addAttachmentButton.isEnabled = true
 
-        binding.taskTitleInput.addTextChangedListener { checkForChanges() }
-        binding.taskDescriptionInput.addTextChangedListener { checkForChanges() }
-        binding.taskExecutionDate.addTextChangedListener { checkForChanges() }
-        binding.taskCategoryDropdown.addTextChangedListener { checkForChanges() }
-        binding.taskNotificationToggle.setOnCheckedChangeListener { _, _ ->
-            checkForChanges()
-        }
-        attachmentAdapter.updateOnDeleteAttachmentFunction { attachment ->
-            attachmentAdapter.removeAttachment(attachment)
-            attachmentsList.remove(attachment)
-            checkForChanges()
+            attachmentAdapter.updateOnDeleteAttachmentFunction { attachment ->
+                attachmentAdapter.removeAttachment(attachment)
+                attachmentsList.remove(attachment)
+                checkForChanges()
+            }
+        } else {
+            setInitialData()
+
+            binding.taskTitleInput.isEnabled = false
+            binding.taskDescriptionInput.isEnabled = false
+            binding.taskExecutionDate.isEnabled = false
+            binding.taskCategoryDropdown.isEnabled = false
+            binding.taskNotificationToggle.isEnabled = false
+            binding.addAttachmentButton.isEnabled = false
+
+            binding.taskEditButton.text = getString(R.string.task_edit)
+            binding.taskSaveChangesButton.isEnabled = false
+            attachmentAdapter.updateOnDeleteAttachmentFunction(null)
         }
     }
 
@@ -384,8 +406,15 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                     binding.taskExecutionDate.text.toString() != taskOriginalDetails.taskExecutionDate ||
                     binding.taskCategoryDropdown.text.toString() != taskOriginalDetails.taskCategory ||
                     binding.taskNotificationToggle.isChecked != (taskOriginalDetails.taskNotification == 1) ||
+                    taskDetails.taskStatus != taskOriginalDetails.taskStatus ||
                     attachmentsList != taskOriginalDetails.attachments
 
+        binding.taskEditButton.setText(
+            if (hasChanged)
+                R.string.task_restore_edit
+            else
+                R.string.task_edit
+        )
         binding.taskSaveChangesButton.isEnabled = hasChanged
     }
 }

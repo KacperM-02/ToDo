@@ -70,7 +70,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
         initCategoryDropdown()
 
         val pickMedia =
-            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris ->
+            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
                 if (uris.isNotEmpty()) {
                     attachmentsList.clear()
                     uris.forEach { uri ->

@@ -138,7 +138,7 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/attachmentsRecyclerView"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_gravity="center" />
@@ -178,7 +178,8 @@
             android:insetBottom="0dp"
 
             android:text="@string/task_changes_save"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:backgroundTint="@color/button_background_selector" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/taskMakeDoneUndone"

@@ -201,46 +201,50 @@ class TasksDatabaseHelper(context: Context) :
     fun updateTask(task: Task): Boolean {
         val db = writableDatabase
         var success = false
+        db.beginTransaction()
         db.transaction {
-            val categoryId = getCategoryIdByName(task.taskCategory)
-            if (categoryId == -1L) return false
+            try {
+                val categoryId = getCategoryIdByName(task.taskCategory)
+                if (categoryId == -1L) return false
 
-            val values = ContentValues().apply {
-                put(COLUMN_TASK_TITLE, task.taskTitle)
-                put(COLUMN_TASK_STATUS, task.taskStatus)
-                put(COLUMN_TASK_DESCRIPTION, task.taskDescription)
-                put(COLUMN_TASK_CREATION_TIME, task.taskCreationTime)
-                put(COLUMN_TASK_EXECUTION_DATE, task.taskExecutionDate)
-                put(COLUMN_TASK_NOTIFICATION, task.taskNotification)
-                put(COLUMN_TASK_CATEGORY_ID, categoryId)
+                val values = ContentValues().apply {
+                    put(COLUMN_TASK_TITLE, task.taskTitle)
+                    put(COLUMN_TASK_STATUS, task.taskStatus)
+                    put(COLUMN_TASK_DESCRIPTION, task.taskDescription)
+                    put(COLUMN_TASK_CREATION_TIME, task.taskCreationTime)
+                    put(COLUMN_TASK_EXECUTION_DATE, task.taskExecutionDate)
+                    put(COLUMN_TASK_NOTIFICATION, task.taskNotification)
+                    put(COLUMN_TASK_CATEGORY_ID, categoryId)
+                }
+
+                val rowsUpdated = update(
+                    TABLE_TASKS,
+                    values,
+                    "$COLUMN_TASK_ID = ?",
+                    arrayOf(task.taskId.toString())
+                )
+
+                delete(
+                    TABLE_ATTACHMENTS,
+                    "$COLUMN_ATTACHMENT_TASK_ID = ?",
+                    arrayOf(task.taskId.toString())
+                )
+
+                val attachmentValues = ContentValues()
+                for (attachmentPath in task.attachments) {
+                    attachmentValues.clear()
+                    attachmentValues.put(COLUMN_ATTACHMENT_TASK_ID, task.taskId)
+                    attachmentValues.put(COLUMN_ATTACHMENT_PATH, attachmentPath)
+                    insert(TABLE_ATTACHMENTS, null, attachmentValues)
+                }
+
+                success = rowsUpdated > 0
+                setTransactionSuccessful()
+            } finally {
+                endTransaction()
             }
-
-            val rowsUpdated = update(
-                TABLE_TASKS,
-                values,
-                "$COLUMN_TASK_ID = ?",
-                arrayOf(task.taskId.toString())
-            )
-
-            delete(
-                TABLE_ATTACHMENTS,
-                "$COLUMN_ATTACHMENT_TASK_ID = ?",
-                arrayOf(task.taskId.toString())
-            )
-
-            val attachmentValues = ContentValues()
-            for (attachmentPath in task.attachments) {
-                attachmentValues.clear()
-                attachmentValues.put(COLUMN_ATTACHMENT_TASK_ID, task.taskId)
-                attachmentValues.put(COLUMN_ATTACHMENT_PATH, attachmentPath)
-                insert(TABLE_ATTACHMENTS, null, attachmentValues)
-            }
-
-            success = rowsUpdated > 0
-
-            db.close()
         }
-        
+        db.close()
         return success
     }
 

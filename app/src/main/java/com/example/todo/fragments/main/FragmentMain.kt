@@ -3,7 +3,6 @@ package com.example.todo.fragments.main
 import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -16,6 +15,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.view.MenuProvider
 import androidx.core.view.get
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
@@ -25,6 +25,8 @@ import com.example.todo.data.sharedPreferences.NotificationTimePreferences
 import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentMainBinding
+import com.example.todo.fragments.addTask.FragmentAddTask.Companion.scheduleTaskNotification
+import com.example.todo.fragments.details.FragmentDetails.Companion.cancelTaskNotification
 
 class FragmentMain : Fragment() {
     private var _binding: FragmentMainBinding? = null
@@ -57,7 +59,7 @@ class FragmentMain : Fragment() {
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_main, menu)
-                menu[0].title = if(hideCompletedTasks) "Show all tasks"
+                menu[0].title = if (hideCompletedTasks) "Show all tasks"
                 else "Hide completed tasks"
             }
 
@@ -65,30 +67,37 @@ class FragmentMain : Fragment() {
                 return when (menuItem.itemId) {
                     R.id.show_done_tasks -> {
                         hideCompletedTasks = !hideCompletedTasks
-                        HideDoneTasksPreferences.setHideDoneTasks(requireContext(), hideCompletedTasks)
+                        HideDoneTasksPreferences.setHideDoneTasks(
+                            requireContext(),
+                            hideCompletedTasks
+                        )
 
                         tasksAdapter.updateList(getFilteredTasksList())
 
-                        menuItem.title = if(hideCompletedTasks) "Show all tasks"
+                        menuItem.title = if (hideCompletedTasks) "Show all tasks"
                         else "Hide completed tasks"
                         true
                     }
+
                     R.id.select_category -> {
                         val categoriesList = dbHelper.getAllCategories().toMutableList()
                         categoriesList.addFirst("Select category...")
                         showSpinnerDialog(
                             categoriesList,
                             getString(R.string.select_category),
-                            if(selectedCategory == null) "Selected category: None" else "Selected category: $selectedCategory",
+                            if (selectedCategory == null) "Selected category: None" else "Selected category: $selectedCategory",
                             "Filter",
                             "Clear",
                             ::filterTasksByCategory
                         )
                         true
                     }
+
                     R.id.select_notification_time -> {
-                        val notificationTimeList = mutableListOf("Select time...", "10 min", "15 min", "30 min", "60 min")
-                        val notificationTime = NotificationTimePreferences.loadNotificationTime(requireContext())
+                        val notificationTimeList =
+                            mutableListOf("Select time...", "10 min", "15 min", "30 min", "60 min")
+                        val notificationTime =
+                            NotificationTimePreferences.loadNotificationTime(requireContext())
                         showSpinnerDialog(
                             notificationTimeList,
                             getString(R.string.select_notification_time),
@@ -99,6 +108,7 @@ class FragmentMain : Fragment() {
                         )
                         true
                     }
+
                     else -> return false
                 }
             }
@@ -118,18 +128,18 @@ class FragmentMain : Fragment() {
         })
     }
 
-    private fun getFilteredTasksList() : MutableList<Task> {
+    private fun getFilteredTasksList(): MutableList<Task> {
         var filteredTasksList = allTasksList
         hideCompletedTasks = HideDoneTasksPreferences.loadHideDoneTasks(requireContext())
         selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
         val textFilter = inputtedText
 
-        if(hideCompletedTasks)
+        if (hideCompletedTasks)
             filteredTasksList = filteredTasksList.filter { task ->
-            task.taskStatus == 0
-        }.toMutableList()
+                task.taskStatus == 0
+            }.toMutableList()
 
-        if(selectedCategory != null) {
+        if (selectedCategory != null) {
             filteredTasksList = filteredTasksList.filter { task ->
                 task.taskCategory == selectedCategory
             }.toMutableList()
@@ -150,7 +160,8 @@ class FragmentMain : Fragment() {
         infoText: String,
         positiveButtonText: String,
         neutralButtonText: String,
-        function : (String) -> Unit) {
+        function: (String) -> Unit
+    ) {
 
         val dialogView = layoutInflater.inflate(R.layout.select_dialog, null)
         val spinner = dialogView.findViewById<Spinner>(R.id.selectSpinner)
@@ -165,7 +176,11 @@ class FragmentMain : Fragment() {
                 return position != 0
             }
 
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+            override fun getDropDownView(
+                position: Int,
+                convertView: View?,
+                parent: ViewGroup
+            ): View {
                 val view = super.getDropDownView(position, convertView, parent)
                 val textView = view as TextView
                 textView.setTextColor(if (position == 0) Color.GRAY else Color.BLACK)
@@ -178,18 +193,18 @@ class FragmentMain : Fragment() {
         AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setView(dialogView)
-            .setPositiveButton(positiveButtonText) {_, _ ->
+            .setPositiveButton(positiveButtonText) { _, _ ->
                 function(spinner.selectedItem.toString())
             }
             .setNegativeButton("Cancel", null)
-            .setNeutralButton(neutralButtonText) {_, _ ->
+            .setNeutralButton(neutralButtonText) { _, _ ->
                 function("")
             }
             .show()
     }
 
     private fun filterTasksByCategory(selectedCategory: String) {
-        if(selectedCategory.isNotEmpty() && selectedCategory != "Select category...")
+        if (selectedCategory.isNotEmpty() && selectedCategory != "Select category...")
             CategoryPreferences.setSelectedCategory(requireContext(), selectedCategory)
         else
             CategoryPreferences.setSelectedCategory(requireContext(), null)
@@ -199,9 +214,14 @@ class FragmentMain : Fragment() {
 
     private fun setNotificationTime(notificationTime: String) {
         val minutes =
-            if(notificationTime.isEmpty() && notificationTime != "Select time...") 5
+            if (notificationTime.isEmpty() && notificationTime != "Select time...") 5
             else notificationTime.split(" ").first().toLong()
         NotificationTimePreferences.setNotificationTime(requireContext(), minutes)
+
+        for (task in allTasksList) {
+            cancelTaskNotification(requireContext(), task)
+            scheduleTaskNotification(requireContext(), task)
+        }
     }
 
     private fun setupRecyclerView() {
@@ -210,8 +230,9 @@ class FragmentMain : Fragment() {
             { task ->
                 val action = FragmentMainDirections.FragmentMainToFragmentDetailsAction(task)
                 findNavController().navigate(action)
-                           },
-            requireContext())
+            },
+            requireContext()
+        )
 
         binding.tasksRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())

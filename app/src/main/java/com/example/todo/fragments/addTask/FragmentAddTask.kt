@@ -287,40 +287,43 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
         return dateTime.format(formatter)
     }
 
-    private fun scheduleTaskNotification(context: Context, task: Task) {
-        if (task.taskNotification == 0) return
+    companion object {
+        fun scheduleTaskNotification(context: Context, task: Task) {
+            if (task.taskNotification == 0) return
 
-        val notificationOffsetMinutes = NotificationTimePreferences.loadNotificationTime(context)
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val notificationOffsetMinutes =
+                NotificationTimePreferences.loadNotificationTime(context)
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        val intent = Intent(context, NotificationReceiver::class.java).apply {
-            putExtra("title", task.taskTitle)
-            putExtra("description", task.taskDescription)
-        }
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("title", task.taskTitle)
+                putExtra("description", task.taskDescription)
+            }
 
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            task.taskId.toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        val executionDateTime = LocalDateTime.parse(task.taskExecutionDate, formatter)
-
-        val triggerTimeMillis = executionDateTime
-            .atZone(ZoneId.systemDefault())
-            .minusMinutes(notificationOffsetMinutes)
-            .toInstant()
-            .toEpochMilli()
-
-
-        if (triggerTimeMillis > System.currentTimeMillis() && alarmManager.canScheduleExactAlarms()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTimeMillis,
-                pendingIntent
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                task.taskId.toInt(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
+
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            val executionDateTime = LocalDateTime.parse(task.taskExecutionDate, formatter)
+
+            val triggerTimeMillis = executionDateTime
+                .atZone(ZoneId.systemDefault())
+                .minusMinutes(notificationOffsetMinutes)
+                .toInstant()
+                .toEpochMilli()
+
+
+            if (triggerTimeMillis > System.currentTimeMillis() && alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimeMillis,
+                    pendingIntent
+                )
+            }
         }
     }
 }

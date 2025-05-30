@@ -20,7 +20,7 @@
     <string name="task_notification">Notification</string>
     <string name="task_edit">Edit task</string>
     <string name="task_restore_edit">Restore initial data</string>
-    <string name="task_changes_save">Save changes</string>
+    <string name="task_changes_save">Save</string>
     <string name="task_make_done">Make done</string>
     <string name="task_make_undone">Make undone</string>
     <string name="task_category">Category</string>

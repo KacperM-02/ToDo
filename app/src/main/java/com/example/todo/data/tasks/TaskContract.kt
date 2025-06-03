@@ -17,7 +17,7 @@ object TaskContract {
         const val COLUMN_TASK_CREATION_TIME = "task_creation_time"
         const val COLUMN_TASK_EXECUTION_DATE = "task_execution_date"
         const val COLUMN_TASK_NOTIFICATION = "task_notification"
-        const val COLUMN_TASK_CATEGORY = "task_category"
+        const val COLUMN_TASK_CATEGORY_ID = "task_category_id"
 
 
         // Attachments table
@@ -25,5 +25,10 @@ object TaskContract {
         const val COLUMN_ATTACHMENT_ID = "attachment_id"
         const val COLUMN_ATTACHMENT_TASK_ID = "attachment_task_id"
         const val COLUMN_ATTACHMENT_PATH = "attachment_path"
+
+        // Categories table
+        const val TABLE_CATEGORIES = "categories_table"
+        const val COLUMN_CATEGORY_ID = "category_id"
+        const val COLUMN_CATEGORY_NAME = "category_name"
     }
 }

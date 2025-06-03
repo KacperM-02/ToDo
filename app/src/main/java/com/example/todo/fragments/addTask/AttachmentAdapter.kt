@@ -7,20 +7,28 @@ import android.widget.ImageView
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo.R
-import com.example.todo.data.tasks.Attachment
 
-class AttachmentAdapter (
-    private val attachmentList: MutableList<Attachment>,
-    private val onDeleteClickListener: (Attachment) -> Unit
+
+class AttachmentAdapter(
+    private val attachmentsList: MutableList<String>,
+    private var onDeleteAttachmentFunction: ((String) -> Unit)?
 ) : RecyclerView.Adapter<AttachmentAdapter.AttachmentViewHolder>() {
+
     inner class AttachmentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val attachmentImage: ImageView = itemView.findViewById(R.id.attachmentImage)
         private val deleteImageButton: ImageView = itemView.findViewById(R.id.deleteAttachmentImage)
 
-        fun bind(attachment: Attachment) {
-            attachmentImage.setImageURI(attachment.attachmentPath.toUri())
-            deleteImageButton.setOnClickListener {
-                onDeleteClickListener(attachment)
+        fun bind(attachmentPath: String) {
+            attachmentImage.setImageURI(attachmentPath.toUri())
+
+            if (onDeleteAttachmentFunction != null) {
+                deleteImageButton.visibility = View.VISIBLE
+                deleteImageButton.setOnClickListener {
+                    onDeleteAttachmentFunction?.invoke(attachmentPath)
+                }
+            } else {
+                deleteImageButton.visibility = View.GONE
+                deleteImageButton.setOnClickListener(null)
             }
         }
     }
@@ -32,16 +40,21 @@ class AttachmentAdapter (
     }
 
     override fun onBindViewHolder(holder: AttachmentViewHolder, position: Int) {
-        holder.bind(attachmentList[position])
+        holder.bind(attachmentsList[position])
     }
 
-    override fun getItemCount() = attachmentList.size
+    override fun getItemCount() = attachmentsList.size
 
-    fun removeAttachment(attachment: Attachment) {
-        val position = attachmentList.indexOf(attachment)
+    fun removeAttachment(attachmentPath: String) {
+        val position = attachmentsList.indexOf(attachmentPath)
         if (position != -1) {
-            attachmentList.removeAt(position)
+            attachmentsList.removeAt(position)
             notifyItemRemoved(position)
         }
+    }
+
+    fun updateOnDeleteAttachmentFunction(newFunction: ((String) -> Unit)?) {
+        onDeleteAttachmentFunction = newFunction
+        notifyDataSetChanged()
     }
 }

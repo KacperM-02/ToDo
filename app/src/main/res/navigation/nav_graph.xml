@@ -24,6 +24,10 @@
         android:name="com.example.todo.fragments.details.FragmentDetails"
         tools:layout="@layout/fragment_details">
 
+        <argument
+            android:name="taskDetails"
+            app:argType="com.example.todo.data.tasks.Task"/>
+
         <action
             android:id="@+id/FragmentDetailsToFragmentMainAction"
             app:destination="@id/FragmentMain" />

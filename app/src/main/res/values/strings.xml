@@ -5,28 +5,31 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="tasks">
-        - Task\n
-        - Task\n
-        - Task
-    </string>
+    <string name="tasks">Tasks list</string>
     <string name="floatingButton">floatingButton</string>
+    <string name="execution_date_main">Execution date: %s</string>
     <string name="task_title">Title</string>
     <string name="task_description">Description</string>
-    <string name="edit_task">Edit task</string>
-    <string name="show_done_tasks">Show/Hide completed tasks</string>
+    <string name="hide_done_tasks">Hide completed tasks</string>
     <string name="select_category">Select a category of tasks</string>
     <string name="select_notification_time">Select notification time</string>
     <string name="sort_tasks">Sort tasks</string>
     <string name="execution_date">Execution date</string>
-    <string name="task_creation_time">Creation time</string>
-    <string name="task_status">Status</string>
+    <string name="task_creation_time">Creation date: %s</string>
+    <string name="task_status">Status: %s</string>
     <string name="task_notification">Notification</string>
     <string name="task_edit">Edit task</string>
-    <string name="task_changes_save">Save changes</string>
+    <string name="task_restore_edit">Restore initial data</string>
+    <string name="task_changes_save">Save</string>
+    <string name="task_make_done">Make done</string>
+    <string name="task_make_undone">Make undone</string>
     <string name="task_category">Category</string>
     <string name="main_search_bar">Search…</string>
     <string name="attachments">Attachments</string>
-    <string name="add_attachment">Add attachment</string>
+    <string name="add_attachment">Add attachments</string>
     <string name="add_task">Add task</string>
+    <string name="input_category">Input new category name…</string>
+    <string name="same_category_error">Inputted category exists!</string>
+    <string name="empty_category_error">Inputted category can\'t be empty!</string>
+    <string name="task_delete">Delete</string>
 </resources>

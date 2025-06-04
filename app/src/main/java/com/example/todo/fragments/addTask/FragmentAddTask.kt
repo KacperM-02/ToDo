@@ -296,8 +296,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             val intent = Intent(context, NotificationReceiver::class.java).apply {
-                putExtra("title", task.taskTitle)
-                putExtra("description", task.taskDescription)
+                putExtra("taskDetails", task)
             }
 
             val pendingIntent = PendingIntent.getBroadcast(

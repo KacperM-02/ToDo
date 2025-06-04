@@ -99,12 +99,12 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                         "execution date or choose task category!", Toast.LENGTH_LONG
             ).show()
             else {
-                scheduleTaskNotification(requireContext(), task)
-
                 val taskId = dbHelper.insertTask(task)
-                if (taskId == -1L) {
+                if (taskId == -1L)
                     Toast.makeText(requireContext(), "Couldn't add task!", Toast.LENGTH_LONG).show()
-                } else {
+                else {
+                    task.taskId = taskId
+                    scheduleTaskNotification(requireContext(), task)
                     for (a in attachmentsList) {
                         dbHelper.insertAttachment(a, taskId)
                     }

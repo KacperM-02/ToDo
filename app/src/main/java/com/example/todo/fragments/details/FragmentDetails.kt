@@ -249,11 +249,24 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                     deleteIcon.visibility = View.VISIBLE
                     deleteIcon.setOnClickListener {
                         AlertDialog.Builder(context)
-                            .setTitle("Delete category?")
-                            .setMessage("Are you sure you want to delete \"$category\"?")
+                            .setTitle("WARNING!")
+                            .setMessage(
+                                if (taskOriginalDetails.taskCategory != category)
+                                    "It may result in deletion of related tasks to this category!" +
+                                            "\nAre you sure you want to delete \"$category\" category?"
+                                else "It will delete this task!\nAre you sure you want to delete" +
+                                        " \"$category\" category and this task?"
+                            )
                             .setPositiveButton("Yes") { _, _ ->
                                 dbHelper.deleteCategory(category)
+                                if (taskOriginalDetails.taskCategory == category) {
+                                    cancelTaskNotification(requireContext(), taskOriginalDetails)
+                                    findNavController().navigate(R.id.FragmentDetailsToFragmentMainAction)
+                                }
+                                if (binding.taskCategoryDropdown.text.toString() == category)
+                                    binding.taskCategoryDropdown.setText("")
                                 categoriesAdapter.remove(category)
+
                                 notifyDataSetChanged()
                             }
                             .setNegativeButton("No", null)
@@ -376,10 +389,10 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
 
     private fun toggleEditing() {
         if (binding.taskEditButton.text == getString(R.string.task_edit)) {
-            binding.taskTitleInput.isEnabled = true
-            binding.taskDescriptionInput.isEnabled = true
-            binding.taskExecutionDate.isEnabled = true
-            binding.taskCategoryDropdown.isEnabled = true
+            binding.taskTitleInputLayout.isEnabled = true
+            binding.taskDescriptionInputLayout.isEnabled = true
+            binding.taskExecutionDateLayout.isEnabled = true
+            binding.taskCategoryDropdownLayout.isEnabled = true
             binding.taskNotificationToggle.isEnabled = true
             binding.addAttachmentButton.isEnabled = true
 
@@ -391,10 +404,10 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         } else {
             setInitialData()
 
-            binding.taskTitleInput.isEnabled = false
-            binding.taskDescriptionInput.isEnabled = false
-            binding.taskExecutionDate.isEnabled = false
-            binding.taskCategoryDropdown.isEnabled = false
+            binding.taskTitleInputLayout.isEnabled = false
+            binding.taskDescriptionInputLayout.isEnabled = false
+            binding.taskExecutionDateLayout.isEnabled = false
+            binding.taskCategoryDropdownLayout.isEnabled = false
             binding.taskNotificationToggle.isEnabled = false
             binding.addAttachmentButton.isEnabled = false
 

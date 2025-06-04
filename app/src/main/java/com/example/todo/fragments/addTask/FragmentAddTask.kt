@@ -161,8 +161,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                     deleteIcon.visibility = View.VISIBLE
                     deleteIcon.setOnClickListener {
                         AlertDialog.Builder(context)
-                            .setTitle("Delete category?")
-                            .setMessage("Are you sure you want to delete \"$category\"?")
+                            .setTitle("WARNING!")
+                            .setMessage("It may result in deletion of related tasks to this category!\nAre you sure you want to delete \"$category\" category?")
                             .setPositiveButton("Yes") { _, _ ->
                                 dbHelper.deleteCategory(category)
                                 adapter.remove(category)

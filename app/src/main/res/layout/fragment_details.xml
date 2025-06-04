@@ -30,17 +30,19 @@
 
             <!-- Title -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/taskTitleInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center">
+                android:layout_gravity="center"
+
+                android:enabled="false">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/taskTitleInput"
                     android:layout_width="match_parent"
                     android:layout_height="70dp"
                     android:gravity="start"
-                    android:hint="@string/task_title"
-                    android:enabled="false" />
+                    android:hint="@string/task_title" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Status -->
@@ -76,9 +78,11 @@
 
             <!-- Description -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/taskDescriptionInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="16dp"
+                android:enabled="false">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/taskDescriptionInput"
@@ -86,14 +90,15 @@
                     android:layout_height="100dp"
                     android:hint="@string/task_description"
                     android:inputType="textMultiLine"
-                    android:gravity="start"
-                    android:enabled="false" />
+                    android:gravity="start" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Execution date -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/taskExecutionDateLayout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:enabled="false">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/taskExecutionDate"
@@ -104,19 +109,20 @@
                     android:clickable="true"
                     android:inputType="none"
                     android:longClickable="false"
-                    android:cursorVisible="false"
-                    android:enabled="false" />
+                    android:cursorVisible="false" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Category -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/taskCategoryDropdownLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:endIconMode="dropdown_menu">
+                app:endIconMode="dropdown_menu"
+                android:enabled="false">
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                     android:id="@+id/taskCategoryDropdown"
+                    style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/task_category"

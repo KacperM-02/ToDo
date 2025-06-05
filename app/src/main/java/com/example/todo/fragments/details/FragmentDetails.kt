@@ -1,5 +1,6 @@
 package com.example.todo.fragments.details
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -8,7 +9,11 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.icu.util.Calendar
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.OpenableColumns
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +26,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.net.toUri
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -34,6 +40,8 @@ import com.example.todo.databinding.FragmentDetailsBinding
 import com.example.todo.fragments.addTask.AttachmentAdapter
 import com.example.todo.fragments.addTask.FragmentAddTask.Companion.scheduleTaskNotification
 import com.google.android.material.textfield.TextInputEditText
+import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -65,6 +73,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
     private var selectedMonth = 0
     private var selectedYear = 0
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -82,12 +91,9 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                 if (uris.isNotEmpty()) {
                     attachmentsList.clear()
                     uris.forEach { uri ->
-                        attachmentsList.add(uri.toString())
-                        requireContext().contentResolver.takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        )
+                        saveImageToStorage(uri, attachmentsList)
                     }
+
                     attachmentAdapter.notifyDataSetChanged()
                     checkForChanges()
                 }
@@ -141,6 +147,17 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                     }
                 }
 
+                taskOriginalDetails.attachments.forEach { attachment ->
+                    if (!attachmentsList.contains(attachment) && !dbHelper.isAttachmentPathShared(
+                            attachment
+                        )
+                    )
+                        if (deleteFileFromStorage(attachment.toUri()))
+                            Log.d("onCreateView", "Deleted file: $attachment")
+                        else
+                            Log.d("onCreateView", "Couldn't delete file: $attachment")
+                }
+
                 if (!dbHelper.updateTask(taskDetails)) {
                     Toast.makeText(requireContext(), "Couldn't update task!", Toast.LENGTH_LONG)
                         .show()
@@ -161,7 +178,14 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                 .setTitle("Are you sure you want to delete the task?")
                 .setPositiveButton("Yes") { _, _ ->
                     cancelTaskNotification(requireContext(), taskOriginalDetails)
+
+                    taskOriginalDetails.attachments.forEach { attachment ->
+                        if (!dbHelper.isAttachmentPathShared(attachment))
+                            deleteFileFromStorage(attachment.toUri())
+                    }
+
                     dbHelper.deleteTask(taskDetails.taskId)
+
                     findNavController().navigate(R.id.FragmentDetailsToFragmentMainAction)
                 }
                 .setNegativeButton("No", null)
@@ -169,6 +193,66 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         }
 
         return binding.root
+    }
+
+    private fun deleteFileFromStorage(uri: Uri): Boolean {
+        return try {
+            File(uri.path ?: return false).delete()
+        } catch (e: Exception) {
+            Log.e("deleteFile", "Couldn't delete file $uri: ", e)
+            false
+        }
+    }
+
+    private fun saveImageToStorage(uri: Uri, attachmentsList: MutableList<String>) {
+        val picturesDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        picturesDir?.mkdirs()
+
+        val fileName = getFileNameFromUri(uri) ?: "image_${System.currentTimeMillis()}.jpg"
+        val images = getSavedImages(picturesDir)
+
+        images.forEach { image ->
+            if (image.name == fileName) {
+                attachmentsList.add(image.path)
+                Log.d("saveImageToStorage", "Image: $fileName exists")
+                return
+            }
+        }
+
+        try {
+            val outputFile = File(picturesDir, fileName)
+            requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(outputFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                    attachmentsList.add(outputFile.absolutePath)
+                    Log.d("saveImageToStorage", "Saved to: ${outputFile.absolutePath}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("saveImageToStorage", "Error saving image", e)
+        }
+    }
+
+    private fun getSavedImages(picturesDir: File?): List<File> {
+        return picturesDir?.listFiles()?.filter { file ->
+            file.isFile && file.name.endsWith(".jpg", ignoreCase = true)
+        } ?: emptyList()
+    }
+
+    private fun getFileNameFromUri(uri: Uri): String? {
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index == -1) return null
+
+                val displayName = it.getString(index)
+                if (displayName != null) {
+                    return displayName
+                }
+            }
+        }
+        return null
     }
 
     private fun setInitialData() {

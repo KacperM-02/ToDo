@@ -46,7 +46,7 @@ class TasksDatabaseHelper(context: Context) :
             $COLUMN_TASK_EXECUTION_DATE TEXT NOT NULL,
             $COLUMN_TASK_NOTIFICATION INTEGER NOT NULL DEFAULT 0,
             $COLUMN_TASK_CATEGORY_ID INTEGER NOT NULL,
-            FOREIGN KEY ($COLUMN_TASK_CATEGORY_ID) REFERENCES $TABLE_CATEGORIES($COLUMN_CATEGORY_ID) ON DELETE CASCADE
+            FOREIGN KEY ($COLUMN_TASK_CATEGORY_ID) REFERENCES $TABLE_CATEGORIES($COLUMN_CATEGORY_ID)
         )
     """.trimIndent()
 
@@ -185,16 +185,28 @@ class TasksDatabaseHelper(context: Context) :
         return tasks
     }
 
-    // Delete task
-    fun deleteTask(taskId: Long): Int {
+    fun deleteTask(taskId: Long) {
         val db = writableDatabase
-        val rowsDeleted = db.delete(
-            TABLE_TASKS,
-            "$COLUMN_TASK_ID = ?",
-            arrayOf(taskId.toString())
-        )
-        db.close()
-        return rowsDeleted
+
+        try {
+            db.beginTransaction()
+
+            db.delete(
+                TABLE_ATTACHMENTS,
+                "$COLUMN_ATTACHMENT_TASK_ID = ?",
+                arrayOf(taskId.toString())
+            )
+
+            db.delete(
+                TABLE_TASKS,
+                "$COLUMN_TASK_ID = ?",
+                arrayOf(taskId.toString())
+            )
+
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
     }
 
     // Update task
@@ -280,6 +292,21 @@ class TasksDatabaseHelper(context: Context) :
 
         db.close()
         return attachments
+    }
+
+    // Checking if there are more than one same paths
+    fun isAttachmentPathShared(path: String): Boolean {
+        val db = readableDatabase // Używamy readableDatabase, bo tylko odczytujemy dane
+
+        val query = """
+        SELECT COUNT(DISTINCT $COLUMN_ATTACHMENT_TASK_ID) > 1
+        FROM $TABLE_ATTACHMENTS
+        WHERE $COLUMN_ATTACHMENT_PATH = ?
+    """.trimIndent()
+
+        return db.compileStatement(query).apply {
+            bindString(1, path)
+        }.simpleQueryForLong() == 1L
     }
 
 

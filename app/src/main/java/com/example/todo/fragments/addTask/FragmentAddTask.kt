@@ -8,7 +8,11 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.icu.util.Calendar
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.OpenableColumns
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +34,8 @@ import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
 import com.example.todo.databinding.FragmentAddTaskBinding
 import com.google.android.material.textfield.TextInputEditText
+import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -74,12 +80,9 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                 if (uris.isNotEmpty()) {
                     attachmentsList.clear()
                     uris.forEach { uri ->
-                        attachmentsList.add(uri.toString())
-                        requireContext().contentResolver.takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        )
+                        saveImageToStorage(uri, attachmentsList)
                     }
+
                     attachmentAdapter.notifyDataSetChanged()
                 }
             }
@@ -99,12 +102,12 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                         "execution date or choose task category!", Toast.LENGTH_LONG
             ).show()
             else {
-                scheduleTaskNotification(requireContext(), task)
-
                 val taskId = dbHelper.insertTask(task)
-                if (taskId == -1L) {
+                if (taskId == -1L)
                     Toast.makeText(requireContext(), "Couldn't add task!", Toast.LENGTH_LONG).show()
-                } else {
+                else {
+                    task.taskId = taskId
+                    scheduleTaskNotification(requireContext(), task)
                     for (a in attachmentsList) {
                         dbHelper.insertAttachment(a, taskId)
                     }
@@ -138,6 +141,57 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
         return binding.root
     }
 
+    private fun saveImageToStorage(uri: Uri, attachmentsList: MutableList<String>) {
+        val picturesDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        picturesDir?.mkdirs()
+
+        val fileName = getFileNameFromUri(uri) ?: "image_${System.currentTimeMillis()}.jpg"
+        val images = getSavedImages(picturesDir)
+
+        images.forEach { image ->
+            if (image.name == fileName) {
+                attachmentsList.add(image.path)
+                Log.d("saveImageToStorage", "Image: $fileName exists")
+                return
+            }
+        }
+
+        try {
+            val outputFile = File(picturesDir, fileName)
+            requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(outputFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                    attachmentsList.add(outputFile.absolutePath)
+                    Log.d("saveImageToStorage", "Saved to: ${outputFile.absolutePath}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("saveImageToStorage", "Error saving image", e)
+        }
+    }
+
+    private fun getSavedImages(picturesDir: File?): List<File> {
+        return picturesDir?.listFiles()?.filter { file ->
+            file.isFile && file.name.endsWith(".jpg", ignoreCase = true)
+        } ?: emptyList()
+    }
+
+    private fun getFileNameFromUri(uri: Uri): String? {
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index == -1) return null
+
+                val displayName = it.getString(index)
+                if (displayName != null) {
+                    return displayName
+                }
+            }
+        }
+        return null
+    }
+
     private fun initCategoryDropdown() {
         val categoriesList = dbHelper.getAllCategories().toMutableList()
         categoriesList.add("+Add new")
@@ -161,8 +215,8 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
                     deleteIcon.visibility = View.VISIBLE
                     deleteIcon.setOnClickListener {
                         AlertDialog.Builder(context)
-                            .setTitle("Delete category?")
-                            .setMessage("Are you sure you want to delete \"$category\"?")
+                            .setTitle("WARNING!")
+                            .setMessage("It may result in deletion of related tasks to this category!\nAre you sure you want to delete \"$category\" category?")
                             .setPositiveButton("Yes") { _, _ ->
                                 dbHelper.deleteCategory(category)
                                 adapter.remove(category)
@@ -296,8 +350,7 @@ class FragmentAddTask : Fragment(), DatePickerDialog.OnDateSetListener,
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             val intent = Intent(context, NotificationReceiver::class.java).apply {
-                putExtra("title", task.taskTitle)
-                putExtra("description", task.taskDescription)
+                putExtra("taskDetails", task)
             }
 
             val pendingIntent = PendingIntent.getBroadcast(

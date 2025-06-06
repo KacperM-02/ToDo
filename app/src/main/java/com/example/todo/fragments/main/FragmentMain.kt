@@ -16,11 +16,12 @@ import android.widget.TextView
 import androidx.core.view.MenuProvider
 import androidx.core.view.get
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.todo.R
 import com.example.todo.data.sharedPreferences.CategoryPreferences
-import com.example.todo.data.sharedPreferences.HideDoneTasksPreferences
 import com.example.todo.data.sharedPreferences.NotificationTimePreferences
 import com.example.todo.data.tasks.Task
 import com.example.todo.data.tasks.TasksDatabaseHelper
@@ -31,14 +32,13 @@ import com.example.todo.fragments.details.FragmentDetails.Companion.cancelTaskNo
 class FragmentMain : Fragment() {
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
-    private var hideCompletedTasks: Boolean = false
     private var selectedCategory: String? = null
-    private var inputtedText: String? = ""
 
     private lateinit var tasksAdapter: TasksAdapter
     private lateinit var dbHelper: TasksDatabaseHelper
     private lateinit var allTasksList: MutableList<Task>
 
+    private val viewModelMain: ViewModelMain by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,6 +48,7 @@ class FragmentMain : Fragment() {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         dbHelper = TasksDatabaseHelper(requireContext())
         allTasksList = dbHelper.getAllTasks().toMutableList()
+        viewModelMain.initValues(requireContext())
         return binding.root
     }
 
@@ -55,27 +56,27 @@ class FragmentMain : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         setupListeners()
+        setupObservers()
 
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_main, menu)
-                menu[0].title = if (hideCompletedTasks) "Show all tasks"
-                else "Hide completed tasks"
+                val hideCompletedTasksObserver = Observer<Boolean> { hideCompletedTasks ->
+                    menu[0].title = if (hideCompletedTasks) "Show all tasks"
+                    else "Hide completed tasks"
+                }
+
+                viewModelMain.hideCompletedTasks.observe(
+                    viewLifecycleOwner,
+                    hideCompletedTasksObserver
+                )
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.show_done_tasks -> {
-                        hideCompletedTasks = !hideCompletedTasks
-                        HideDoneTasksPreferences.setHideDoneTasks(
-                            requireContext(),
-                            hideCompletedTasks
-                        )
-
+                        viewModelMain.toggleHideCompletedTasks(requireContext())
                         tasksAdapter.updateList(getFilteredTasksList())
-
-                        menuItem.title = if (hideCompletedTasks) "Show all tasks"
-                        else "Hide completed tasks"
                         true
                     }
 
@@ -121,20 +122,26 @@ class FragmentMain : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                inputtedText = newText
-                tasksAdapter.updateList(getFilteredTasksList())
+                viewModelMain.updateInputtedText(newText)
                 return true
             }
         })
     }
 
+    private fun setupObservers() {
+        val inputtedTextObserver = Observer<String?> { _ ->
+            tasksAdapter.updateList(getFilteredTasksList())
+        }
+
+        viewModelMain.inputtedText.observe(viewLifecycleOwner, inputtedTextObserver)
+    }
+
     private fun getFilteredTasksList(): MutableList<Task> {
         var filteredTasksList = allTasksList
-        hideCompletedTasks = HideDoneTasksPreferences.loadHideDoneTasks(requireContext())
         selectedCategory = CategoryPreferences.loadSelectedCategory(requireContext())
-        val textFilter = inputtedText
+        val textFilter = viewModelMain.inputtedText.value
 
-        if (hideCompletedTasks)
+        if (viewModelMain.hideCompletedTasks.value == true)
             filteredTasksList = filteredTasksList.filter { task ->
                 task.taskStatus == 0
             }.toMutableList()

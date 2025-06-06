@@ -117,6 +117,8 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         }
 
         binding.taskEditButton.setOnClickListener {
+            if (binding.taskEditButton.text == getString(R.string.task_restore_edit))
+                setInitialData()
             toggleEditing()
         }
 
@@ -170,6 +172,7 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
         }
 
         binding.taskMakeDoneUndone.setOnClickListener {
+            toggleEditing()
             updateTaskStatus()
         }
 
@@ -486,8 +489,6 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
                 checkForChanges()
             }
         } else {
-            setInitialData()
-
             binding.taskTitleInputLayout.isEnabled = false
             binding.taskDescriptionInputLayout.isEnabled = false
             binding.taskExecutionDateLayout.isEnabled = false
@@ -495,7 +496,6 @@ class FragmentDetails : Fragment(), DatePickerDialog.OnDateSetListener,
             binding.taskNotificationToggle.isEnabled = false
             binding.addAttachmentButton.isEnabled = false
 
-            binding.taskEditButton.text = getString(R.string.task_edit)
             binding.taskSaveChangesButton.isEnabled = false
             attachmentAdapter.updateOnDeleteAttachmentFunction(null)
         }
